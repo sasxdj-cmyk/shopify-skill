@@ -1,0 +1,15 @@
+name: shopify-custom-skill
+version: 0.1.0
+description: >
+  Production-grade Shopify theme and storefront skill: sections and blocks,
+  Liquid, cart and AJAX, Markets and locales, checkout extensibility, the 36
+  official security checks, performance, accessibility, SEO and launch QA.
+author: Salvatore Cuccaro
+license: MIT
+homepage: https://github.com/sasxdj-cmyk/shopify-skill
+repository: https://github.com/sasxdj-cmyk/shopify-skill
+
+# Skills are discovered from ../skills/ at register() time.
+# Hermes loads them on demand via skill_view("shopify-custom-skill").
+provides_skills:
+  - shopify-custom-skill

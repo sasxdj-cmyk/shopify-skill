@@ -1,0 +1,334 @@
+{%- comment -%}
+  Canonical section: featured collection with pinned products.
+
+  Demonstrates, in one file:
+  - a valid schema with settings, blocks, max_blocks, presets and enabled_on
+  - blocks with shopify_attributes, deduplicated against the collection
+  - responsive images with width/height, srcset, sizes and lazy loading
+  - escaping at every sink, JSON only inside the script
+  - section-scoped CSS through {% style %} and a section-scoped script
+  - a quick-add flow that handles the 422 error body and announces the result
+
+  Copy it into sections/ as sections/section-template.liquid, and copy
+  assets/featured-product-card.liquid into snippets/. The "locales" keys at the
+  bottom are read as sections.section-template.<key>; if you rename the file, rename
+  the key prefix too, then add the matching strings to every locale.
+{%- endcomment -%}
+
+{%- liquid
+  assign collection = section.settings.collection
+  assign limit = section.settings.products_to_show
+  assign columns = section.settings.columns
+  assign heading = section.settings.heading
+  assign pinned_ids = ''
+
+  for block in section.blocks
+    if block.type == 'product' and block.settings.product
+      assign pinned_ids = pinned_ids | append: block.settings.product.id | append: ','
+    endif
+  endfor
+-%}
+
+<section
+  id="shopify-section-{{ section.id }}"
+  class="featured-collection featured-collection--{{ section.id }}"
+  aria-labelledby="featured-collection-heading-{{ section.id }}"
+>
+  <div class="featured-collection__inner">
+    {%- if heading != blank -%}
+      <div class="featured-collection__header">
+        <h2 id="featured-collection-heading-{{ section.id }}" class="featured-collection__heading">
+          {{ heading | escape }}
+        </h2>
+
+        {%- if section.settings.show_view_all and collection != blank -%}
+          <a class="featured-collection__link" href="{{ collection.url }}">
+            {{ 'collections.general.view_all' | t: collection: collection.title }}
+          </a>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- if collection == blank and section.blocks.size == 0 -%}
+      <p class="featured-collection__empty">{{ 'collections.general.no_products' | t }}</p>
+    {%- else -%}
+      <ul
+        class="featured-collection__grid"
+        style="--featured-columns: {{ columns }};"
+        role="list"
+      >
+        {%- comment -%} 1. Pinned products, in the merchant's order. {%- endcomment -%}
+        {%- for block in section.blocks -%}
+          {%- assign product = block.settings.product -%}
+          {%- if product -%}
+            <li class="featured-collection__item" {{ block.shopify_attributes }}>
+              {%- render 'featured-product-card', product: product, section_id: section.id -%}
+            </li>
+          {%- endif -%}
+        {%- endfor -%}
+
+        {%- comment -%} 2. Collection products, skipping the pinned ones. {%- endcomment -%}
+        {%- if collection != blank -%}
+          {%- assign shown = 0 -%}
+          {%- for product in collection.products -%}
+            {%- assign needle = ',' | append: product.id | append: ',' -%}
+            {%- assign haystack = ',' | append: pinned_ids -%}
+            {%- if haystack contains needle -%}
+              {%- continue -%}
+            {%- endif -%}
+
+            {%- if shown >= limit -%}
+              {%- break -%}
+            {%- endif -%}
+
+            {%- assign shown = shown | plus: 1 -%}
+            <li class="featured-collection__item">
+              {%- render 'featured-product-card', product: product, section_id: section.id -%}
+            </li>
+          {%- endfor -%}
+        {%- endif -%}
+      </ul>
+    {%- endif -%}
+
+    <p class="featured-collection__status" role="status" aria-live="polite" data-cart-status></p>
+  </div>
+</section>
+
+{%- style -%}
+  .featured-collection--{{ section.id }} {
+    padding-block: {{ section.settings.padding_top }}px {{ section.settings.padding_bottom }}px;
+    background: {{ section.settings.background }};
+  }
+
+  .featured-collection--{{ section.id }} .featured-collection__inner {
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+
+  .featured-collection--{{ section.id }} .featured-collection__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-block-end: 1.5rem;
+  }
+
+  .featured-collection--{{ section.id }} .featured-collection__heading {
+    margin: 0;
+    font-size: clamp(1.25rem, 2.5vw, 2rem);
+  }
+
+  .featured-collection--{{ section.id }} .featured-collection__grid {
+    display: grid;
+    grid-template-columns: repeat(var(--featured-columns, 3), minmax(0, 1fr));
+    gap: 1.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media screen and (max-width: 749px) {
+    .featured-collection--{{ section.id }} .featured-collection__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+  }
+
+  .featured-collection--{{ section.id }} .featured-collection__status:empty {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .featured-collection--{{ section.id }} * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+{%- endstyle -%}
+
+{%- javascript -%}
+  (() => {
+    // One delegated listener for every featured-collection section on the page.
+    // It survives the section being re-rendered by the Section Rendering API,
+    // which a listener bound to the section element would not.
+    if (window.__shopifyFeaturedCollection) return;
+    window.__shopifyFeaturedCollection = true;
+
+    const controller = new AbortController();
+    window.addEventListener('pagehide', () => controller.abort(), { once: true });
+
+    const successMessage = '{{ 'sections.section-template.added_to_cart' | t }}';
+    const errorMessage = '{{ 'sections.section-template.add_to_cart_error' | t }}';
+    const networkMessage = '{{ 'sections.section-template.network_error' | t }}';
+
+    document.addEventListener('submit', async (event) => {
+      const form = event.target.closest('[data-quick-add]');
+      if (!form) return;
+      event.preventDefault();
+
+      const root = form.closest('.featured-collection');
+      if (!root || form.dataset.pending === 'true') return;
+
+      const sectionId = root.id.replace('shopify-section-', '');
+      const button = form.querySelector('button[type="submit"]');
+
+      form.dataset.pending = 'true';
+      if (button) button.disabled = true;
+
+      try {
+        const response = await fetch('/cart/add.js', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            items: [{ id: Number(form.dataset.variantId), quantity: 1 }],
+            sections: sectionId,
+            sections_url: window.location.pathname,
+          }),
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          const status = root.querySelector('[data-cart-status]');
+          if (status) status.textContent = error.description || error.message || errorMessage;
+          return;
+        }
+
+        const payload = await response.json();
+        document.dispatchEvent(new CustomEvent('cart:updated', { detail: payload }));
+
+        const markup = payload.sections && payload.sections[sectionId];
+        if (!markup) return;
+
+        const replacement = new DOMParser()
+          .parseFromString(markup, 'text/html')
+          .getElementById(`shopify-section-${sectionId}`);
+        if (!replacement) return;
+
+        root.replaceWith(replacement);
+
+        // The live region was replaced with the markup: re-announce on the new node.
+        const newStatus = replacement.querySelector('[data-cart-status]');
+        if (newStatus) newStatus.textContent = successMessage;
+      } catch (error) {
+        if (error.name === 'AbortError') return;
+        const status = root.querySelector('[data-cart-status]');
+        if (status) status.textContent = networkMessage;
+      } finally {
+        form.dataset.pending = 'false';
+        if (button && button.isConnected) button.disabled = false;
+      }
+    });
+  })();
+{%- endjavascript -%}
+
+{% schema %}
+{
+  "name": "Featured collection",
+  "tag": "div",
+  "class": "section-featured-collection",
+  "limit": 2,
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Featured products"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "Maximum products from the collection",
+      "min": 2,
+      "max": 12,
+      "step": 1,
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "Columns on desktop",
+      "min": 2,
+      "max": 4,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "checkbox",
+      "id": "show_view_all",
+      "label": "Show a link to the collection",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "background",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 96,
+      "step": 4,
+      "unit": "px",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 96,
+      "step": 4,
+      "unit": "px",
+      "default": 40
+    }
+  ],
+  "blocks": [
+    {
+      "type": "product",
+      "name": "Pinned product",
+      "limit": 4,
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 4,
+  "presets": [
+    {
+      "name": "Featured collection",
+      "category": "Collection",
+      "settings": {
+        "heading": "Featured products",
+        "products_to_show": 8,
+        "columns": 3
+      }
+    }
+  ],
+  "enabled_on": {
+    "templates": ["index", "collection", "product", "page"]
+  },
+  "locales": {
+    "it": {
+      "heading": "Prodotti in evidenza",
+      "view_all": "Vedi tutta la collezione",
+      "added_to_cart": "Aggiunto al carrello",
+      "add_to_cart_error": "Non disponibile in questa quantita'",
+      "network_error": "Connessione assente. Riprova."
+    }
+  }
+}
+{% endschema %}

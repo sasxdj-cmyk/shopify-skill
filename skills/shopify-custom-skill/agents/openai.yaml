@@ -1,0 +1,7 @@
+interface:
+  display_name: Shopify Custom Skill
+  short_description: Build, customize and audit Shopify themes and storefronts
+  default_prompt: Use $shopify-custom-skill to build or review this Shopify theme change, then run the security and QA gates.
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,43 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate skill package
+        run: node scripts/validate.mjs
+
+      - name: Markdown lint
+        uses: DavidAnson/markdownlint-cli2-action@v17
+        with:
+          globs: "**/*.md"
+
+      - name: Link check
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # skills.sh only indexes the repository after the first release,
+          # so its badge and page are excluded from the link check.
+          args: >-
+            --no-progress
+            --max-retries 2
+            --accept 200,206,301,302,403,429
+            --exclude 'skills\.sh'
+            '**/*.md'
+          fail: true

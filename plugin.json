@@ -1,0 +1,29 @@
+{
+  "name": "shopify-custom-skill",
+  "description": "Production-grade Shopify theme and storefront skill for AI agents: sections and blocks, Liquid, cart and AJAX, Markets, checkout extensibility, the 36 official security checks, performance, accessibility, SEO and launch QA.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Salvatore Cuccaro",
+    "url": "https://github.com/sasxdj-cmyk"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/sasxdj-cmyk/shopify-skill",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sasxdj-cmyk/shopify-skill.git"
+  },
+  "keywords": [
+    "shopify",
+    "liquid",
+    "theme",
+    "storefront",
+    "ecommerce",
+    "agent-skills",
+    "claude-code",
+    "codex",
+    "opencode",
+    "qwen",
+    "hermes"
+  ],
+  "skills": "./skills/"
+}

@@ -1,0 +1,29 @@
+{
+  "name": "shopify-custom-skill",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Production-grade Shopify theme and storefront Agent Skill for Claude Code, Codex, OpenCode, Qwen Code and Hermes Agent.",
+  "license": "MIT",
+  "author": "Salvatore Cuccaro",
+  "homepage": "https://github.com/sasxdj-cmyk/shopify-skill",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sasxdj-cmyk/shopify-skill.git"
+  },
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "test": "node scripts/validate.mjs",
+    "check:links": "node scripts/check-links.mjs"
+  },
+  "keywords": [
+    "shopify",
+    "liquid",
+    "agent-skills",
+    "claude-code",
+    "codex",
+    "opencode",
+    "qwen",
+    "hermes"
+  ]
+}

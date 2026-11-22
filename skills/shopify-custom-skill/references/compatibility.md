@@ -21,7 +21,7 @@ Project-level equivalents exist for every agent (`.agents/skills/`, `.claude/ski
 Rules that avoid 90% of the problems:
 
 - The directory name must equal the `name` in the frontmatter.
-- One skill per directory. Two `SKILL.md` files with the same name make Hermes Agent fail with an ambiguous-name error and make Codex list both.
+- One skill per directory. Two skills that resolve to the same id are ambiguous: loaders either list both or refuse to choose, and the behaviour differs per agent.
 - Keep the body under 500 lines and push detail into `references/`, because some agents load the whole `SKILL.md` into the session context.
 - Use relative paths with forward slashes. `references/liquid-patterns.md`, never `references\liquid-patterns.md` and never an absolute path.
 - Do not name harness-specific tools in the body. Write "read the file", "run the command", "ask the user", not "use the Read tool" or "dispatch a subagent".
@@ -58,7 +58,7 @@ mkdir -p ~/.config/opencode/skills
 cp -r skills/shopify-custom-skill ~/.config/opencode/skills/
 ```
 
-Discovery paths: `~/.config/opencode/skills/`, `.opencode/skills/`, and the compatibility directories `~/.claude/skills/` and `~/.agents/skills/`. The skill id is derived from the path and is case-sensitive; the frontmatter `name` is a display label. Skills are exposed through the `skill` tool and can be referenced as `@<id>` in a prompt.
+Discovery paths: `~/.config/opencode/skills/`, `.opencode/skills/`, and the compatibility directories `~/.claude/skills/` and `~/.agents/skills/`. The skill id comes from the directory name, while the frontmatter `name` is the display label (the official example uses `name: Git Release` inside `git-release/`). Skills are exposed through the `skill` tool and can be referenced as `@<skill-id>` in a prompt.
 
 ### Qwen Code
 

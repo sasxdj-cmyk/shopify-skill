@@ -96,13 +96,16 @@ Rules:
 
 - Use the `localization` form. It preserves the current path and sets the market context; a hand-built redirect loses the page.
 - Submit on change only with a visible fallback button for no-JS and for keyboard users.
-- Show language names in their own language (`endonym_name`), not translated into the current UI language.
+- Show language names in their own language with `language.endonym_name` (a `shop_locale` property); `language.name` is the name in the store's primary locale, which is not what a buyer browsing in Italian wants to read.
+- `country_option_tags` renders the country options with the store's localized names. Do not hand-build a country list, and do not assume a country implies a currency: `country.currency` is authoritative.
 - Do not offer a currency the market does not support. Derive the list from `localization.available_countries`.
 - After switching, verify that the product URL keeps its prefix and that the cart keeps its items and currency.
 
 ## URLs and SEO
 
-- Shopify emits `hreflang` alternates for published markets. Inspect the rendered `<head>`; do not add a second, conflicting set.
+- Shopify adds `hreflang` tags automatically through `content_for_header` when the store uses Markets. A country-specific market produces a region-qualified tag (`fr-ca`, `en-us`); a broader market produces a language-only tag (`fr`). The tags update when markets, domains or languages change and stay in sync with each page's canonical URL.
+- Adding your own tags on top of the automatic ones produces duplicate or conflicting annotations, which hurts ranking. Manage them manually only when another app already emits them or when you link separate stores on different domains.
+- To emit your own: turn off **Online store → Preferences → Social sharing and SEO → Automatic hreflang tags**, build the tags from the `localization` object, never hardcode domains or resource handles (a handle differs per language), and make every localized URL self-canonical.
 - `{{ canonical_url }}` is the canonical for the current page in the current market. Do not build canonicals by hand.
 - Localized URLs use the market's subfolder or domain. Internal links must use `routes` and object URLs (`product.url`, `collection.url`), never string-built paths.
 - `page_title` and `page_description` come from translated SEO fields when present.
@@ -131,7 +134,8 @@ Rules:
 ## Sources
 
 - https://shopify.dev/docs/storefronts/themes/markets — Markets for themes (verified on 2026-11-20)
+- https://shopify.dev/docs/storefronts/themes/seo — SEO guidance (verified on 2026-11-20)
+- https://shopify.dev/docs/storefronts/themes/seo/hreflang — automatic hreflang through `content_for_header` (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/markets/multiple-currencies-languages — currencies and languages (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/architecture/locales — locale files (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/architecture/locales/storefront-locale-files — locale file format (verified on 2026-11-20)
-- https://shopify.dev/docs/storefronts/themes/seo — SEO guidance (verified on 2026-11-20)

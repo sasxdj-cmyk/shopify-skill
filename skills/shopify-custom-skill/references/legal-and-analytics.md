@@ -7,8 +7,8 @@ What the theme must do so the merchant can meet its obligations, and how analyti
 ## Consent
 
 - The merchant's cookie banner is usually an app, but the theme must not fire tracking before consent. A hardcoded analytics snippet in `theme.liquid` bypasses the banner and is a compliance defect.
-- Shopify exposes a Customer Privacy API in the storefront (`window.Shopify.customerPrivacy`) that reports whether analytics, marketing and preferences processing are allowed, and whether a banner must be shown. Read it before loading non-essential scripts.
-- Web Pixels receive consent state through the pixel API; a pixel that ignores it is a finding, not a preference.
+- Shopify exposes the Customer Privacy API in the storefront (`window.Shopify.customerPrivacy`) that reports whether analytics, marketing and preferences processing are allowed, and whether a banner must be shown. Read it before loading non-essential scripts.
+- For app pixels the primary gate is declarative: the pixel declares the permissions it needs in `shopify.extension.toml` and Shopify only loads it when the visitor has granted all of them. Consent read inside the pixel is a second line of defence, not the first.
 - Consent must be revocable. A banner that can only accept is not compliant in the EU.
 - Region-specific behaviour: the same store can require opt-in in the EU and allow opt-out elsewhere. Do not hardcode one model for all markets.
 
@@ -16,30 +16,49 @@ What the theme must do so the merchant can meet its obligations, and how analyti
 
 A Web Pixel is an app extension that runs in a sandboxed environment and receives standard storefront events.
 
+```toml
+# extensions/analytics-pixel/shopify.extension.toml
+type = "web_pixel_extension"
+name = "Analytics pixel"
+runtime_context = "strict"
+
+# Shopify loads this pixel only when every permission declared here is granted.
+[customer_privacy]
+analytics = true
+marketing = false
+preferences = false
+sale_of_data = "disabled"
+```
+
 ```js
 // extensions/analytics-pixel/src/index.js
 import { register } from '@shopify/web-pixels-extension';
 
-register(({ analytics, browser, init, settings }) => {
-  analytics.subscribe('page_viewed', (event) => {
-    if (!init.customerPrivacy.analyticsProcessingAllowed) return;
-    // send to the vendor endpoint
+register(({ analytics, customerPrivacy, init }) => {
+  // Initial snapshot, valid at page render.
+  let privacy = init.customerPrivacy;
+
+  // The only consent event: fires when the visitor submits the banner.
+  customerPrivacy.subscribe('visitorConsentCollected', (event) => {
+    privacy = event.customerPrivacy;
   });
 
   analytics.subscribe('product_viewed', (event) => {
-    if (!init.customerPrivacy.analyticsProcessingAllowed) return;
+    if (!privacy.analyticsProcessingAllowed) return;
     const { productVariant } = event.data;
-    // send variant id and price only, never customer identity
+    // Send variant id and price only, never customer identity.
   });
 });
 ```
 
-Standard events include `page_viewed`, `product_viewed`, `collection_viewed`, `search_submitted`, `cart_viewed`, `checkout_started`, `checkout_completed`, `checkout_contact_info_submitted`, `visitorConsentCollected`.
+`init.customerPrivacy` and the event payload share the same shape: `analyticsProcessingAllowed`, `marketingAllowed`, `preferencesProcessingAllowed`, `saleOfDataAllowed`. All four are booleans.
+
+The 15 standard events, as published: `alert_displayed`, `cart_viewed`, `checkout_address_info_submitted`, `checkout_completed`, `checkout_contact_info_submitted`, `checkout_shipping_info_submitted`, `checkout_started`, `collection_viewed`, `page_viewed`, `payment_info_submitted`, `product_added_to_cart`, `product_removed_from_cart`, `product_viewed`, `search_submitted`, `ui_extension_errored`.
 
 Rules:
 
 - Pixels are app extensions, not theme scripts. Do not paste a vendor snippet into `theme.liquid` and call it a pixel integration.
-- Pixels run in a sandbox: limited DOM access, no arbitrary globals. Use the provided `analytics`, `browser`, `init` and `settings`.
+- Pixels run in a sandbox: limited DOM access, no arbitrary globals. Use the provided `analytics`, `browser`, `customerPrivacy`, `init` and `settings`.
 - Outbound domains must be configured in the extension's network access settings. A pixel that needs an unapproved domain fails silently in production.
 - Subscribe only to the events you use; every subscription costs runtime on the storefront.
 - Never send email, phone, full name or address to an analytics endpoint. Send ids and aggregate values.
@@ -94,6 +113,8 @@ Engineering consequences: do not hide costs until the last step, do not pre-tick
 - https://shopify.dev/docs/apps/build/compliance/privacy-law-compliance — privacy law compliance and mandatory webhooks (verified on 2026-11-20)
 - https://shopify.dev/docs/apps/build/marketing/pixels — Web Pixels overview (verified on 2026-11-20)
 - https://shopify.dev/docs/api/web-pixels-api — Web Pixels API (verified on 2026-11-20)
-- https://shopify.dev/docs/api/web-pixels-api/standard-events — standard events (verified on 2026-11-20)
+- https://shopify.dev/docs/api/web-pixels-api/standard-events — the 15 standard events (verified on 2026-11-20)
+- https://shopify.dev/docs/api/web-pixels-api/standard-api/init — `init.customerPrivacy` (verified on 2026-11-20)
+- https://shopify.dev/docs/api/web-pixels-api/pixel-privacy — declarative privacy settings and `customerPrivacy.subscribe('visitorConsentCollected')` (verified on 2026-11-20)
 - https://shopify.dev/docs/api/web-pixels-api/emitting-data — emitting data (verified on 2026-11-20)
 - https://shopify.dev/docs/apps/build/security — app security requirements (verified on 2026-11-20)

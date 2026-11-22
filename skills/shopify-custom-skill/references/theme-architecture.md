@@ -150,16 +150,16 @@ Rules:
 | `name` | yes | Label in the editor |
 | `tag` | no | Wrapper element (`div` by default); use `section` for landmarks |
 | `class` | no | Class added to the wrapper |
-| `limit` | no | Max instances of this section in one template |
+| `limit` | no | Max instances in one template or section group; the documented values are 1 and 2 |
 | `settings` | no | Array of setting definitions |
 | `blocks` | no | Array of block definitions (`type`, `name`, `limit`, `settings`) |
-| `max_blocks` | no | Hard cap on blocks in one instance |
+| `max_blocks` | no | Hard cap on blocks in one instance; 50 is the platform ceiling and static blocks do not count |
 | `presets` | no | Makes the section addable from the editor |
-| `default` | no | Settings used when the section is added without a preset |
-| `enabled_on` / `disabled_on` | no | `{ "templates": [...] }` or `{ "groups": [...] }` |
+| `default` | no | Configuration for a **statically rendered** section, same shape as a preset; not a substitute for `presets` |
+| `enabled_on` / `disabled_on` | no | `{ "templates": [...] }` and/or `{ "groups": [...] }`; `enabled_on` needs at least one of the two, and only one of `enabled_on` / `disabled_on` may be used. Both replace the old `templates` attribute |
 | `locales` | no | Section-owned strings: `{ "it": { "key": "value" } }`, read with `sections.<file-name>.<key>` |
 
-If `enabled_on` is omitted the section is available everywhere. A section with no `presets` and no `enabled_on` can only be placed by editing JSON by hand.
+If `enabled_on` is omitted the section is available everywhere. A section with no `presets` and no `enabled_on` can only be placed by editing JSON by hand. A section with presets should not also be statically rendered: pick `presets` for merchant-addable sections, `default` for statically rendered ones.
 
 ## Setting types
 
@@ -168,6 +168,7 @@ If `enabled_on` is omitted the section is available everywhere. A section with n
 | `text` | string | Single line; render as text, never as HTML |
 | `textarea` | string | Multi-line plain text |
 | `richtext` | HTML string | Merchant-formatted; render through the rich-text path |
+| `inline_richtext` | HTML string | Rich text without block-level elements; same escaping rules as `richtext` |
 | `html` | HTML string | Raw HTML from the merchant; treat as trusted-but-dangerous |
 | `liquid` | Liquid source | Executed by the platform; restrict to developers |
 | `image_picker` | image | Use `image_url` + `image_tag` |
@@ -175,23 +176,27 @@ If `enabled_on` is omitted the section is available everywhere. A section with n
 | `video` | video | Shopify-hosted video |
 | `video_url` | URL | YouTube/Vimeo; use `external_video_tag` |
 | `product` | product | |
-| `product_list` | array of products | Max 50 |
+| `product_list` | array of products | `limit` defaults to 50 and cannot exceed 50 |
 | `collection` | collection | |
-| `collection_list` | array of collections | Max 50 |
+| `collection_list` | array of collections | `limit` defaults to 50 and cannot exceed 50 |
+| `article` | article | |
+| `article_list` | array of articles | `limit` defaults to 50 and cannot exceed 50 |
 | `blog` | blog | |
 | `page` | page | |
-| `article` | article | |
 | `link_list` | linklist | Navigation menu |
 | `metaobject` | metaobject | Single entry |
-| `metaobject_list` | array of metaobjects | |
+| `metaobject_list` | array of metaobjects | `limit` defaults to 50 and cannot exceed 50 |
 | `color` | color | |
+| `color_palette` | palette | Palette of colours with cross-setting references |
 | `color_scheme` | color scheme | Pairs with `color_scheme_group` in settings schema |
 | `color_background` | color + gradient | |
 | `font_picker` | font | Use `font_face` to emit `@font-face` |
+| `number` | number | Numeric input |
 | `range` | number | `min`, `max`, `step`, `unit` |
 | `checkbox` | boolean | |
 | `select` | string | `options: [{ "value", "label" }]` |
 | `radio` | string | Same options shape |
+| `text_alignment` | string | Horizontal alignment selector |
 | `header` | — | Visual grouping in the editor |
 | `paragraph` | — | Help text in the editor |
 

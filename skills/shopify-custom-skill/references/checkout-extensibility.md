@@ -18,7 +18,8 @@ Rules:
 
 - Never propose `checkout.liquid`. It does not render, and saying otherwise destroys trust in every other answer you give.
 - You cannot add arbitrary HTML, CSS or JavaScript to checkout. You compose from the checkout component library inside a sandboxed extension.
-- Availability of specific targets and capabilities depends on the store's plan. Confirm the plan before designing a flow that depends on a Plus-only target.
+- **Plan gate, verified 2026-11-20:** checkout UI extensions for the information, shipping and payment steps are available only to stores on Shopify Plus. Cart transform operations that override price (`lineUpdate` / `update`) are likewise limited to development stores and Plus stores. Bundling operations (`lineExpand`, `linesMerge`) are not covered by that restriction.
+- Confirm the merchant's plan before designing a flow that depends on any of the above. On Basic, Shopify and Advanced, the honest answer is often "this needs an app with a different mechanism" or "this is not possible".
 
 ## Checkout UI extensions
 
@@ -76,10 +77,13 @@ Common targets (see the targets reference for the full list):
 |--------|------------------|
 | `purchase.checkout.block.render` | Anywhere the merchant places a block in the checkout editor |
 | `purchase.checkout.cart-line-item.render-after` | Under each cart line |
-| `purchase.checkout.contact.render-before` / `render-after` | Around the contact section |
-| `purchase.checkout.delivery-option-item.render-after` | Under each shipping option |
-| `purchase.checkout.payment-method-item.render-after` | Under each payment method |
-| `purchase.checkout.shipping-option-list.render-before` | Above the shipping options |
+| `purchase.checkout.cart-line-list.render-after` | After the whole line list |
+| `purchase.checkout.contact.render-after` | After the contact section |
+| `purchase.checkout.shipping-option-item.render-after` | Under each shipping option |
+| `purchase.checkout.shipping-option-list.render-before` / `render-after` | Around the shipping options |
+| `purchase.checkout.payment-method-list.render-before` / `render-after` | Around the payment methods |
+| `purchase.checkout.reductions.render-after` | After the discount code field |
+| `purchase.checkout.actions.render-before` | Before the pay button |
 | `purchase.thank-you.block.render` | Thank-you page |
 
 Rules:
@@ -96,7 +100,7 @@ Rules:
 There is no "add a fee line with my own price" API. Choose one of these:
 
 1. **A real product variant** (recommended for simple fees): create a hidden gift-wrap variant priced at €5, then `applyCartLinesChange({ type: 'addCartLine', merchandiseId, quantity: 1 })`. It behaves like any line: tax, refunds, inventory policy and reporting work.
-2. **A Cart Transform Function**: for bundles and dynamic pricing, transform the cart to add or reprice lines. This is the only way to compute a price at checkout time rather than store it on a variant. Verify the exact operation shape against the current Functions API before implementing.
+2. **A Cart Transform Function**: for bundles and dynamic pricing, transform the cart to add or reprice lines. This is the only way to compute a price at checkout time rather than store it on a variant. **Plan gate:** operations that override price (`lineUpdate`, `update`) require a development store or Shopify Plus; `lineExpand` and `linesMerge` are not subject to that restriction. One cart transform function per app per store; if several apps have one, all of them run. Verify the exact operation shape against the current Functions API before implementing.
 3. **A discount function** when the option lowers the price instead of adding a fee.
 
 Never simulate a fee with a cart attribute only. An attribute is a note, not money: it does not appear in totals, taxes or reports.
@@ -193,7 +197,7 @@ shopify app dev            # runs the extension against a dev store checkout
 shopify app deploy         # creates an app version with the extensions
 ```
 
-- Test on a development store with the same plan as the merchant. A Plus-only target will not render on Basic.
+- Test on a development store with the same plan as the merchant. Information, shipping and payment step extensions, and cart transform price overrides, do not render outside development stores and Plus.
 - Test the checkout in every market the store sells in: currency, language, address rules and tax behaviour change the flow.
 - Test with a discount, a sold-out line, a quantity change from the extension, and a rejected mutation.
 - Roll out to a subset of buyers first when the merchant supports it, and watch checkout completion rate before and after.

@@ -164,6 +164,15 @@ Every check from Shopify's app security engine, with its official severity, adap
 
 Each row in `references/security-checklist.md` gives severity, what to look for, the fix and how to verify it. Any open `high` finding blocks a launch.
 
+## Why the detail holds up
+
+AI answers about Shopify fail on specifics, not on structure. This repository treats every specific as a claim to verify:
+
+- **Every factual statement carries a source URL and the date it was checked.** 61 cited URLs, all reachable, checked by `scripts/check-links.mjs` and by CI.
+- **The facts are pinned in the test suite.** Checkout targets, Theme Check names, schema keys, setting types, Web Pixel events and the 36 security severities are compared against the published values; inventing one fails the build.
+- **Legacy names are quarantined.** `checkout.liquid`, the Ruby-gem Theme Check names and the old `--category` flag are documented as wrong so an agent does not fall back to them.
+- **The release notes record the corrections.** Version 0.1.1 lists six factual defects found during review of 0.1.0, including three extension targets that do not exist. A skill that never corrects itself is not verified, it is untested.
+
 ## Validation
 
 The repository ships an executable test suite for the skill itself:
@@ -172,13 +181,15 @@ The repository ships an executable test suite for the skill itself:
 node scripts/validate.mjs
 ```
 
-It checks the spec (`name` equals directory, kebab-case, description starts with "Use when", body under 500 lines), the reference inventory, all 36 security checks with severity, every markdown link, every manifest (JSON and YAML), the bilingual README and the CI wiring. CI runs it on every push.
+It runs **50 checks**: the spec (`name` equals directory, kebab-case, description starts with "Use when", body under 500 lines), the reference inventory, all 36 security checks with their official severity, every markdown link, every manifest (JSON and YAML), the bilingual README and the CI wiring.
+
+It also pins the facts, so an edit cannot quietly invent one: the 31 checkout extension targets, the current Theme Check names (with the legacy Ruby-gem names quarantined), the section schema keys, the 34 setting types, the 15 Web Pixel events and all 36 security severities must match the values published by Shopify. CI runs it on every push.
 
 ```bash
 node scripts/check-links.mjs
 ```
 
-Verifies that every URL cited in the documentation resolves. 57/57 at the time of writing.
+Verifies that every URL cited in the documentation resolves. 61/61 at the time of writing.
 
 The TDD evidence — executable RED/GREEN runs and the behavioural baseline — is recorded in `docs/tdd-round-1.md`, including what remains unverified.
 
@@ -246,6 +257,15 @@ Per Claude Code: `~/.claude/skills/`. Per Codex, OpenCode, Qwen Code e Hermes Ag
 ### Cosa contiene
 
 Architettura del tema, Liquid, carrello AJAX, Markets e traduzioni, checkout extensibility, sicurezza, performance, accessibilità, SEO, checklist di lancio e rubrica di valutazione. Tutto in inglese dentro la skill (è la lingua di lavoro degli agenti), con README bilingue.
+
+### Perché i dettagli reggono
+
+Le risposte AI su Shopify sbagliano sulle specifiche, non sulla struttura. Qui ogni specifica è una tesi da verificare:
+
+- **Ogni affermazione tecnica ha la sua fonte e la data di verifica.** 61 URL citati, tutti raggiungibili, controllati da `scripts/check-links.mjs` e dalla CI.
+- **I fatti sono fissati nei test.** Target delle checkout extension, nomi dei check di Theme Check, chiavi dello schema, tipi di setting, eventi Web Pixel e le 36 severità di sicurezza vengono confrontati con i valori pubblicati da Shopify: inventarne uno fa fallire la build (50 controlli eseguiti da `node scripts/validate.mjs`).
+- **I nomi superati sono messi in quarantena.** `checkout.liquid`, i nomi dei check del vecchio gem Ruby e il flag `--category` sono documentati come sbagliati, così un agente non ci ricasca.
+- **Le note di rilascio registrano le correzioni.** La 0.1.1 elenca sei difetti fattuali trovati nella 0.1.0, compresi tre target di estensione che non esistono. Una skill che non si corregge mai non è verificata: è solo non testata.
 
 ### Licenza
 

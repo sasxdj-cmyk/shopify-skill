@@ -49,7 +49,7 @@ Objects that may be `nil` must be guarded. `{{ product.featured_image }}` on a p
 | `{% sections 'header-group' %}` | render a section group | for header/footer groups |
 | `{% content_for 'blocks' %}` | render theme blocks | blocks defined in `blocks/` |
 | `{% form 'type' %}` | platform form | emits CSRF token and action |
-| `{% paginate x by n %}` | pagination | `n` max 50 |
+| `{% paginate x by n %}` | pagination | `n` is 1–250 in Liquid; Theme Check's `PaginationSize` defaults to a 1–50 window |
 | `{% liquid %}` | multi-statement block | no output; use for setup |
 | `{% comment %}` / `{% # inline %}` | comments | `{% # %}` is the inline form |
 | `{% raw %}` | literal Liquid | for documentation only |
@@ -147,7 +147,7 @@ Rules:
 {%- endif -%}
 ```
 
-- `image_url` accepts `width`, `height`, `crop`, `format`. `image_tag` generates `src`, `srcset`, `width`, `height` and `sizes`.
+- `image_url` accepts `width`, `height`, `crop`, `format`, `quality` and `scale`. `width` and `height` top out at 5760 px. `image_tag` generates `src`, `srcset`, `width`, `height` and `sizes`.
 - Always set `width` and `height` (or wrap in a fixed `aspect-ratio`) to avoid layout shift.
 - Above the fold: `loading: 'eager'`, `fetchpriority: 'high'`, and a `preload` link for the LCP image only.
 - Everything else: `loading: 'lazy'`, and `decoding: 'async'` for large images.
@@ -168,7 +168,8 @@ Rules:
 {% endpaginate %}
 ```
 
-- Maximum page size is 50. Theme Check flags anything else (`PaginationSize`).
+- The `paginate` tag accepts a page size between 1 and 250, and can reach at most the 25,000th item in an array. Theme Check's `PaginationSize` defaults to a 1–50 window (`max_size: 50`), so a page size above 50 fails the default check even though Liquid allows it.
+- `paginate` limits the amount fetched, not only what is displayed: `collection.products` returns up to 50 products by default regardless of a `for` loop's `limit`. Use `paginate` with a `page_size` to control the fetch, and combine it with `limit` when you only render a few.
 - `paginate.pages`, `paginate.current_page`, `paginate.items`, `paginate.next`, `paginate.previous` are available inside the block.
 - Filtering and sorting must preserve pagination parameters; otherwise page 2 loses the filter.
 - For infinite scroll, request the next page over AJAX and append; keep a real `<a href>` for crawlers and no-JS users.
@@ -204,7 +205,13 @@ Rules:
 | Recommendations | GET | `/recommendations/products.json?product_id=…&limit=4` | — |
 
 - Send `sections` (comma-separated section ids) and `sections_url` (usually `location.pathname`) with add/change/update to receive re-rendered HTML in `sections`.
-- A failed request returns HTTP 422 with `{ status, message, description }`. Show `description`.
+- A failed request returns HTTP 422 with `{ status, message, description }`. Show `description`. The four documented cases:
+  - quantity above available stock → the cart adds the maximum available and returns "You can't add more <name> to the cart."
+  - product fully sold out → "The product '<name>' is already sold out."
+  - stock exhausted because it is already in the cart → "You can't add more <name> to the cart."
+  - variant id missing or not published to the Online Store channel → "Cannot find variant".
+- Exceeding stock therefore **does not always fail silently or cleanly**: the cart may contain more than the shopper asked for, or nothing at all. Read the response body and reconcile the drawer with it instead of assuming the requested quantity was added.
+- Admin API changes can take a few seconds to reach the Cart API. A "Cannot find variant" right after publishing a variant is usually propagation, not a bug: retry once before reporting a failure.
 - `quantity: 0` removes a line. A line index is 1-based and changes after removal, so prefer `id`.
 - Cart totals are integers in the smallest currency unit. Format with `money`.
 - After a successful change, update every dependent UI region from the response: drawer, counter, cart page summary, and any `aria-live` announcement.

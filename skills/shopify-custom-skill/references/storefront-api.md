@@ -26,10 +26,12 @@ X-Shopify-Storefront-Access-Token: {public-token}
 Content-Type: application/json
 ```
 
-- **Public access token**: safe in browser code. It can read published products, collections, pages, blogs, and manage the buyer's own cart. Scope it in the Headless channel or the custom app.
-- **Private access token**: server only. Never ship it to a browser, never put it in a theme, never commit it.
-- Pin an explicit API version in the URL (`2026-10` at the time of writing; check the current release). Unversioned calls break without warning.
+- **Tokenless access** exists and needs no header. It covers products and collections, selling plans, search, pages, blogs and articles, and cart read/write. It has a query complexity limit of 1,000.
+- **Public access token**: created with the Admin API `storefrontAccessTokenCreate` mutation, sent in `X-Shopify-Storefront-Access-Token`. It is visible to buyers by design. Use it for the features tokenless access does not cover: product tags, metaobjects and metafields, menus, customers.
+- **Private access token**: server only, for example a Hydrogen backend. Never ship it to a browser, never put it in a theme, never commit it.
+- Pin an explicit API version in the URL (`2026-10` at the time of writing; check the current release). Never rely on a default version.
 - Customer-scoped operations require a customer access token obtained through the customer account flow, not the public token.
+- Server-side requests with a private token must send the buyer IP header. Without it, Shopify can answer `430 Shopify Security Rejection`.
 
 ## Queries
 
@@ -99,10 +101,13 @@ query @inContext(country: IT, language: IT) {
 
 ## Rate limits
 
-- The Storefront API is cost-based: each query has a calculated cost, and the response includes `extensions.cost` with `requestedQueryCost`, `actualQueryCost` and `throttleStatus`.
-- On throttle, back off with jitter and reduce the query. Retrying immediately makes it worse.
-- Batch independent reads into one operation when the cost is lower than several round trips, but do not build a 5000-field query to avoid three requests.
-- The Admin API has its own cost model and is never called from a storefront. If you need Admin data in a storefront, cache it server-side or expose it through an app proxy.
+- **Buyer traffic is not rate-limited per minute.** The Storefront API scales with real buyers; there is no fixed requests-per-minute figure to design around.
+- Automated traffic is limited: bots and crawlers are throttled, most strictly when unsigned. Signing requests with Web Bot Auth raises the allowance.
+- **Checkout creation is throttled per minute** and answers `200 Throttled`. Build a queue with exponential backoff around checkout creation; this is the one place a burst really hurts.
+- **Tokenless access** has a query complexity limit of 1,000. Exceeding it returns `MAX_COMPLEXITY_EXCEEDED` with `cost` and `maxCost` in `extensions`, not a 429.
+- A request that looks malicious gets `430 Shopify Security Rejection`. Server-side calls with a private token must send the buyer IP header to avoid it.
+- Input arrays are capped at 250 items on every Shopify API. Pagination of object arrays caps at 25,000 objects, and the cap applies to count queries too.
+- The Admin API has a different model (calculated cost, by plan) and is never called from a storefront. If you need Admin data in a storefront, cache it server-side or expose it through an app proxy.
 
 ## Hydrogen
 
@@ -118,5 +123,6 @@ query @inContext(country: IT, language: IT) {
 - https://shopify.dev/docs/api/storefront/latest — Storefront API reference (verified on 2026-11-20)
 - https://shopify.dev/docs/api/storefront/latest/queries/cart — cart queries and mutations (verified on 2026-11-20)
 - https://shopify.dev/docs/api/storefront/latest/mutations/cartCreate — cart creation (verified on 2026-11-20)
-- https://shopify.dev/docs/api/usage/limits — cost-based rate limits (verified on 2026-11-20)
+- https://shopify.dev/docs/api/usage/limits — limits shared across the APIs (verified on 2026-11-20)
+- https://shopify.dev/docs/api/storefront#rate-limits — Storefront API rate limits: no buyer limit, bot limits, checkout throttle, tokenless complexity 1,000 (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/headless/hydrogen — Hydrogen overview (verified on 2026-11-20)

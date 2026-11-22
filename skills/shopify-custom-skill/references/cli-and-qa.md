@@ -35,37 +35,55 @@ Rules:
 
 ## Theme Check
 
-Default configuration thresholds that matter for structure and safety:
+The current check set is the one listed in Shopify's checks reference. Names and severities below are copied from that page (verified 2026-11-20). A rule that is not on this list does not exist in the current CLI.
 
-| Rule | Default | Meaning |
-|------|---------|---------|
-| `TemplateLength` | max 600 lines | Split long templates into sections and snippets |
-| `NestedSnippet` | max depth 3 | Deeper nesting is unreadable and slow |
-| `PaginationSize` | 1–50 | Page size outside the range is rejected |
-| `ImgWidthAndHeight` | on | `<img>` needs `width` and `height` |
-| `ImgLazyLoading` | on | Below-the-fold images need `loading="lazy"` |
-| `AssetPreload` | on | Preload the LCP image and primary font |
-| `CdnPreconnect` | on | Preconnect to `cdn.shopify.com` once |
-| `ParserBlockingJavaScript` | on | No synchronous scripts in `<head>` |
-| `ContentForHeaderModification` | on | `content_for_header` must be untouched |
-| `MatchingTranslations` | on | Locale files share the same keys |
-| `DefaultLocale` | on | A default locale file exists |
-| `ValidSchema` / `SchemaJsonFormat` | on | Section schema is valid JSON with known keys |
-| `AppBlockValidTags` | on | App block markup uses allowed tags |
-| `RemoteAsset` | on | Flags assets loaded from third-party hosts |
-| `DeprecatedFilter` | on | Flags removed Liquid filters |
-| `UnusedAssign` / `UndefinedObject` | on | Dead assignments and unknown objects |
-| `MissingAsset` / `MissingTemplate` / `MissingSnippet` | on | Referenced files exist |
-| `JSONMissingBlock` / `JSONSyntaxError` | on | JSON templates reference existing blocks and parse |
-| `TranslationKeyExists` | on | `t` keys exist in the locale files |
+| Rule | Severity | Meaning |
+|------|----------|---------|
+| `ContentForHeaderModification` | Error | `content_for_header` must be untouched |
+| `ParserBlockingScript` | Error | `<script>` needs `defer` or `async` |
+| `ImgWidthAndHeight` | Error | `<img>` needs `width` and `height` |
+| `MissingAsset` | Error | Every `asset_url` target exists |
+| `LiquidSyntaxError` / `LiquidHTMLSyntaxError` | Error | Liquid and HTML syntax |
+| `UndefinedObject` | Error | Reference to an undefined Liquid object |
+| `UnknownFilter` | Error | Reference to an unknown filter |
+| `TranslationKeyExists` | Error | `t` key exists in the locale files |
+| `ValidSchemaTranslations` | Error | Schema translation keys resolve in the default schema locale |
+| `ValidSchemaName` | Error | Schema `name` value is valid |
+| `ValidSchema` | Warning | Schema JSON is valid with known keys |
+| `MatchingTranslations` | Warning | Locale files share the same keys |
+| `PaginationSize` | Warning | Page size between 1 and 50 (configurable) |
+| `MaxFileSize` | Error | File under Shopify's size limit |
+| `MissingTemplate` | Warning | `render`, `section` and `include` targets exist |
+| `OrphanedSnippet` | Warning | Snippet is referenced somewhere |
+| `RemoteAsset` | Warning | Asset loaded from a third-party host |
+| `AssetPreload` | Warning | Preload through Liquid filters, not HTML attributes |
+| `CdnPreconnect` | Warning | No redundant preconnect to Shopify's CDN |
+| `LiquidNestingDepth` / `LiquidComplexity` | Warning | Deep nesting or high cyclomatic complexity |
+| `ExcessiveSettingsCount` | Warning | Too many top-level settings in a schema |
+| `HardcodedRoutes` | Warning | Use the `routes` object instead of literal URLs |
+| `BlockIdUsage` | Warning | Block ids used in conditionals |
+| `JSONMissingSection` / `JSONMissingBlock` / `JSONSyntaxError` | Error | JSON templates reference existing sections and blocks and parse |
+| `UnclosedHTMLElement` | Error | Unclosed element in branching code |
+| `JavascriptTagInWrongFile` / `StylesheetTagInWrongFile` | Error | `javascript` / `stylesheet` tags outside section, block and snippet files |
+| `StaticStylesheetAndJavascriptTags` | Error | No Liquid inside `{% stylesheet %}` or `{% javascript %}` |
+| `SchemaPresetsStaticBlocks` | Error | A preset static block has a matching `{% content_for "block" %}` |
+| `RequiredLayoutThemeObject` | Error | `theme.liquid` renders `content_for_header` and `content_for_layout` |
+| `DeprecatedTag` | Error | No removed tags |
+| `DeprecatedFilter` | Warning | No removed filters |
+| `AppBlockValidTags` | Error | App block markup uses allowed tags |
+
+Legacy names to avoid: the deprecated Ruby gem (`Shopify/theme-check`, 44 check files) still uses `TemplateLength`, `NestedSnippet`, `ImgLazyLoading`, `DefaultLocale`, `SchemaJsonFormat`, `ParserBlockingJavaScript`, `UnusedSnippet`. They are not in the current reference, so do not cite them as current rules.
 
 Useful invocations:
 
 ```bash
 shopify theme check --fail-level error          # CI gate: errors fail, warnings report
 shopify theme check --output json > check.json  # machine-readable evidence
-shopify theme check --category liquid           # one family at a time
+shopify theme check --list                      # enabled checks with severities
+shopify theme check -C theme-check:all          # every check, for a one-off audit
 ```
+
+Severity is configurable per check in `.theme-check.yml` (`error`, `warning`, `info`, or `0`, `1`, `2`). Do not lower a severity to make a build green; fix the code or record a documented exception.
 
 What Theme Check cannot see, and you must test yourself:
 
@@ -116,7 +134,7 @@ Tools: axe DevTools, Lighthouse accessibility, and a keyboard-only pass. Automat
 
 - `{{ page_title }}` and `{{ page_description }}` in `<head>`; unique titles per template, product and collection.
 - `{{ canonical_url }}` as the canonical link. Do not hand-build canonicals for paginated or filtered pages.
-- Shopify emits `hreflang` alternates for published Markets. Inspect the rendered `<head>` before adding your own, and never emit duplicates that disagree.
+- Shopify adds `hreflang` tags automatically through `content_for_header` when the store uses Markets. Inspect the rendered `<head>` before adding your own, and never emit duplicates that disagree.
 - Product and breadcrumb structured data: check whether the theme already emits it, then add `Product` with `offers` (price, currency, availability) and `BreadcrumbList`. Validate with a structured-data testing tool.
 - One `h1` per page, descriptive alt text, crawlable pagination links (`<a href>`), and a sitemap the platform already generates.
 - Do not block `cdn.shopify.com` or the storefront's own assets in `robots.txt`.

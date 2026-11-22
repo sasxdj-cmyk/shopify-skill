@@ -128,7 +128,12 @@ const REFERENCES = [
   'legal-and-analytics.md',
   'compatibility.md',
 ];
-const ASSETS = ['section-template.liquid', 'launch-checklist.md', 'rubric.md'];
+const ASSETS = [
+  'section-template.liquid',
+  'featured-product-card.liquid',
+  'launch-checklist.md',
+  'rubric.md',
+];
 const AGENTS = ['Claude Code', 'Codex', 'OpenCode', 'Qwen Code', 'Hermes Agent'];
 const SECURITY_CHECKS = [
   'ACTIVE_UPLOADS_AND_PRIVILEGED_PREVIEWS',
@@ -168,7 +173,250 @@ const SECURITY_CHECKS = [
   'UNSCOPED_SHOP_CONFIG_WRITE',
   'WEAK_SHOP_VALIDATION',
 ];
-const VERSION = '0.1.0';
+const VERSION = '0.1.1';
+// Severity published in Shopify/cli at
+// packages/app/src/cli/services/app-security-engine/checks/<ID>.md on 2026-11-20.
+// A drift here means the checklist teaches the wrong priority.
+const SECURITY_SEVERITIES = {
+  ACTIVE_UPLOADS_AND_PRIVILEGED_PREVIEWS: 'high',
+  APP_PROXY_LIQUID_INJECTION: 'high',
+  APP_PROXY_UNVERIFIED_SIGNATURE: 'high',
+  COMMITTED_SECRET: 'high',
+  CREDENTIAL_BROWSER_LEAKAGE: 'high',
+  CREDENTIAL_LOG_LEAKAGE: 'high',
+  CROSS_SITE_SCRIPTING: 'high',
+  CSRF_MISSING_PROTECTION: 'medium',
+  DEPENDENCY_REACHABILITY: 'medium',
+  DEPRECATED_SCRIPT_TAG_SCOPE: 'medium',
+  EOL_API_VERSION: 'low',
+  EXPIRING_OFFLINE_TOKEN: 'medium',
+  INSECURE_WEBHOOK_URL: 'high',
+  LIQUID_UNSAFE_RENDER: 'medium',
+  METAFIELD_OFFLINE_TOKEN: 'high',
+  MISSING_AUTHORIZATION_CHECK: 'high',
+  MISSING_COMPLIANCE_WEBHOOKS: 'medium',
+  MISSING_EMBEDDED_CSP: 'medium',
+  MISSING_TENANT_ISOLATION: 'high',
+  OPEN_REDIRECT: 'medium',
+  OVERBROAD_DATA_ACCESS: 'medium',
+  REQUEST_CONTROLLED_ADMIN_CONTEXT: 'high',
+  REQUEST_DERIVED_SHOP_SCOPE: 'high',
+  SCOPE_OVER_REQUEST: 'high',
+  SCRIPT_TAG_URL_INJECTION: 'high',
+  SESSION_LIFECYCLE_AND_REPLAY: 'high',
+  SHARED_NAMESPACE_METAFIELD_RENDER: 'medium',
+  SQL_INJECTION: 'high',
+  SSRF_REQUEST_FORGERY: 'high',
+  STATIC_FRAME_ANCESTORS: 'high',
+  TEXT_SETTING_HTML_SMUGGLING: 'high',
+  THEME_EXTENSION_XSS: 'high',
+  UNAUTHENTICATED_ENDPOINT: 'high',
+  UNSAFE_INNERHTML: 'high',
+  UNSCOPED_SHOP_CONFIG_WRITE: 'high',
+  WEAK_SHOP_VALIDATION: 'high',
+};
+// Check names published in https://shopify.dev/docs/storefronts/themes/tools/theme-check/checks
+// on 2026-11-20. The current CLI only runs these; the deprecated Ruby gem had a
+// different set, which is why a legacy name in the docs is a bug.
+const THEME_CHECK_CURRENT = [
+  'AppBlockMissingSchema',
+  'AppBlockValidTags',
+  'AssetPreload',
+  'AssetSizeAppBlockCSS',
+  'AssetSizeAppBlockJavascript',
+  'AssetSizeCSS',
+  'AssetSizeJavaScript',
+  'BlockIdUsage',
+  'CdnPreconnect',
+  'ContentForHeaderModification',
+  'DeprecateBgsizes',
+  'DeprecateLazysizes',
+  'DeprecatedFilter',
+  'DeprecatedFontsOnSectionsAndBlocks',
+  'DeprecatedFontsOnSettingsData',
+  'DeprecatedFontsOnSettingsSchema',
+  'DeprecatedTag',
+  'DuplicateContentForArguments',
+  'DuplicateRenderSnippetArguments',
+  'EmptyBlockContent',
+  'ExcessiveSettingsCount',
+  'HardcodedRoutes',
+  'ImgWidthAndHeight',
+  'JavascriptOncePerFile',
+  'JavascriptTagInWrongFile',
+  'JSONMissingBlock',
+  'JSONMissingSection',
+  'JSONSyntaxError',
+  'LiquidComplexity',
+  'LiquidFreeSettings',
+  'LiquidHTMLSyntaxError',
+  'LiquidNestingDepth',
+  'LiquidSyntaxError',
+  'MatchingTranslations',
+  'MaxFileSize',
+  'MissingAsset',
+  'MissingContentForArguments',
+  'MissingRenderSnippetArguments',
+  'MissingTemplate',
+  'OrphanedSnippet',
+  'PaginationSize',
+  'ParserBlockingScript',
+  'RemoteAsset',
+  'RequiredLayoutThemeObject',
+  'ReservedDocParamNames',
+  'SchemaOncePerFile',
+  'SchemaPresetsBlockOrder',
+  'SchemaPresetsStaticBlocks',
+  'SchemaSectionOrBlockOnly',
+  'StaticStylesheetAndJavascriptTags',
+  'StylesheetOncePerFile',
+  'StylesheetTagInWrongFile',
+  'TranslationKeyExists',
+  'UnclosedHTMLElement',
+  'UndefinedObject',
+  'UniqueDocParamNames',
+  'UniqueStaticBlockId',
+  'UnknownFilter',
+  'UnrecognizedContentForArguments',
+  'UnrecognizedRenderSnippetArguments',
+  'UnsupportedDocTag',
+  'UnsupportedFilterArguments',
+  'UnusedAssign',
+  'UnusedDocParam',
+  'ValidBlockTarget',
+  'ValidContentForArgumentTypes',
+  'ValidContentForArguments',
+  'ValidDocParamTypes',
+  'ValidHTMLTranslation',
+  'ValidLocalBlocks',
+  'ValidRenderSnippetArgumentTypes',
+  'ValidSchema',
+  'ValidSchemaName',
+  'ValidSchemaTranslations',
+  'ValidScopedCSSClass',
+  'ValidSettingsKey',
+  'ValidStaticBlockType',
+  'VariableName',
+];
+const THEME_CHECK_LEGACY = [
+  'DefaultLocale',
+  'ImgLazyLoading',
+  'NestedSnippet',
+  'ParserBlockingJavaScript',
+  'SchemaJsonFormat',
+  'TemplateLength',
+  'UnusedSnippet',
+  'MissingSnippet',
+];
+// Section schema keys and setting types published at
+// https://shopify.dev/docs/storefronts/themes/architecture/sections/section-schema
+// and .../settings/input-settings on 2026-11-20.
+const SECTION_SCHEMA_KEYS = [
+  'name',
+  'tag',
+  'class',
+  'limit',
+  'settings',
+  'blocks',
+  'max_blocks',
+  'presets',
+  'default',
+  'enabled_on',
+  'disabled_on',
+  'locales',
+];
+const SETTING_TYPES = [
+  'article',
+  'article_list',
+  'blog',
+  'checkbox',
+  'collection',
+  'collection_list',
+  'color',
+  'color_background',
+  'color_palette',
+  'color_scheme',
+  'color_scheme_group',
+  'font_picker',
+  'header',
+  'html',
+  'image_picker',
+  'inline_richtext',
+  'link_list',
+  'liquid',
+  'metaobject',
+  'metaobject_list',
+  'number',
+  'page',
+  'paragraph',
+  'product',
+  'product_list',
+  'radio',
+  'range',
+  'richtext',
+  'select',
+  'text',
+  'text_alignment',
+  'textarea',
+  'url',
+  'video',
+  'video_url',
+];
+// The 15 standard Web Pixel events published at
+// https://shopify.dev/docs/api/web-pixels-api/standard-events on 2026-11-20.
+const STANDARD_EVENTS = [
+  'alert_displayed',
+  'cart_viewed',
+  'checkout_address_info_submitted',
+  'checkout_completed',
+  'checkout_contact_info_submitted',
+  'checkout_shipping_info_submitted',
+  'checkout_started',
+  'collection_viewed',
+  'page_viewed',
+  'payment_info_submitted',
+  'product_added_to_cart',
+  'product_removed_from_cart',
+  'product_viewed',
+  'search_submitted',
+  'ui_extension_errored',
+];
+// Targets present in https://shopify.dev/docs/api/checkout-ui-extensions/latest/targets
+// on 2026-11-20. Any target named in the package must appear here, so a
+// hallucinated target fails the build instead of shipping.
+const CHECKOUT_TARGETS = [
+  'purchase.checkout.actions.render-before',
+  'purchase.checkout.block.render',
+  'purchase.checkout.cart-line-item.render-after',
+  'purchase.checkout.cart-line-list.render-after',
+  'purchase.checkout.contact.render-after',
+  'purchase.checkout.delivery-address.render-after',
+  'purchase.checkout.delivery-address.render-before',
+  'purchase.checkout.footer.render-after',
+  'purchase.checkout.header.render-after',
+  'purchase.checkout.payment-method-list.render-after',
+  'purchase.checkout.payment-method-list.render-before',
+  'purchase.checkout.pickup-location-list.render-after',
+  'purchase.checkout.pickup-location-list.render-before',
+  'purchase.checkout.pickup-location-option-item.render-after',
+  'purchase.checkout.pickup-point-list.render-after',
+  'purchase.checkout.pickup-point-list.render-before',
+  'purchase.checkout.reductions.render-after',
+  'purchase.checkout.reductions.render-before',
+  'purchase.checkout.render-after',
+  'purchase.checkout.render-before',
+  'purchase.checkout.shipping-option-item.details.render',
+  'purchase.checkout.shipping-option-item.render-after',
+  'purchase.checkout.shipping-option-list.render-after',
+  'purchase.checkout.shipping-option-list.render-before',
+  'purchase.thank-you.announcement.render',
+  'purchase.thank-you.block.render',
+  'purchase.thank-you.cart-line-item.render-after',
+  'purchase.thank-you.cart-line-list.render-after',
+  'purchase.thank-you.customer-information.render-after',
+  'purchase.thank-you.footer.render-after',
+  'purchase.thank-you.header.render-after',
+];
 
 /* ------------------------------------------------------------------ */
 /* A. Package structure                                                */
@@ -560,6 +808,121 @@ check('H2 section schema in the asset is valid JSON', () => {
     assert(setting.label, `setting ${setting.id} has no label`);
   }
   return `${ids.length} settings, ${schema.blocks.length} block type(s)`;
+});
+
+/* ------------------------------------------------------------------ */
+/* I. Cross-file factual consistency                                   */
+/* ------------------------------------------------------------------ */
+check('I1 every checkout target is a real target', () => {
+  const dir = join(SKILL_DIR, 'references');
+  const files = [...readdirSync(dir).filter((n) => n.endsWith('.md')).map((n) => join(dir, n)), SKILL_FILE];
+  const known = new Set(CHECKOUT_TARGETS);
+  const problems = [];
+  for (const file of files) {
+    const text = read(file);
+    for (const match of text.matchAll(/\bpurchase\.(?:checkout|thank-you)\.[a-z0-9.\-]+[a-z0-9]/g)) {
+      const target = match[0].replace(/-$/, '');
+      if (!known.has(target)) problems.push(`${target} in ${file.split(/[\\/]/).pop()}`);
+    }
+  }
+  assert(problems.length === 0, `unknown target(s): ${[...new Set(problems)].join(', ')}`);
+  return `${known.size} pinned targets`;
+});
+check('I2 assets named in the docs exist', () => {
+  const docs = [join(ROOT, 'README.md'), join(ROOT, 'CHANGELOG.md'), SKILL_FILE];
+  const problems = [];
+  for (const file of docs) {
+    const text = read(file);
+    for (const match of text.matchAll(/`(assets\/[a-z0-9\-]+\.(?:liquid|md))`/g)) {
+      if (!existsSync(join(SKILL_DIR, match[1]))) problems.push(`${match[1]} in ${file.split(/[\\/]/).pop()}`);
+    }
+  }
+  assert(problems.length === 0, `missing: ${problems.join(', ')}`);
+  return `${ASSETS.length} assets pinned`;
+});
+check('I3 asset docs point at the real install path', () => {
+  const text = read(join(SKILL_DIR, 'assets', 'section-template.liquid'));
+  assert(/snippets\/featured-product-card\.liquid/.test(text), 'section must document its snippet path');
+  const card = read(join(SKILL_DIR, 'assets', 'featured-product-card.liquid'));
+  assert(/snippets\/featured-product-card\.liquid/.test(card), 'card must document its own path');
+  return 'snippets/featured-product-card.liquid';
+});
+check('I4 Theme Check names are current, not legacy', () => {
+  const file = join(SKILL_DIR, 'references', 'cli-and-qa.md');
+  const lines = read(file).split('\n');
+  const current = new Set(THEME_CHECK_CURRENT);
+  const legacy = new Set(THEME_CHECK_LEGACY);
+  const problems = [];
+  let counted = 0;
+  for (const line of lines) {
+    const legacyLine = /^Legacy names to avoid/.test(line);
+    const cell = /^\|\s*`([^`]+)`/.exec(line);
+    if (cell) {
+      for (const name of cell[1].split('/').map((n) => n.trim())) {
+        counted += 1;
+        if (!current.has(name)) problems.push(`not a current check: ${name}`);
+      }
+    }
+    for (const name of legacy) {
+      if (new RegExp(`\\b${name}\\b`).test(line) && !legacyLine) problems.push(`legacy name outside the warning: ${name}`);
+    }
+  }
+  assert(problems.length === 0, problems.join('; '));
+  assert(counted >= 20, `only ${counted} check names documented`);
+  return `${counted} current checks, ${legacy.size} legacy names quarantined`;
+});
+check('I5 schema keys and setting types are real', () => {
+  const file = join(SKILL_DIR, 'references', 'theme-architecture.md');
+  const text = read(file);
+  const problems = [];
+  const typesSection = text.split('## Setting types')[1] || '';
+  const typeNames = [];
+  for (const line of typesSection.split('\n')) {
+    const cell = /^\|\s*`([a-z_]+)`/.exec(line);
+    if (cell) {
+      typeNames.push(cell[1]);
+      if (!SETTING_TYPES.includes(cell[1])) problems.push(`unknown setting type: ${cell[1]}`);
+    }
+  }
+  const keysSection = text.split('| Key | Required | Meaning |')[1] || '';
+  const keyNames = [];
+  for (const line of keysSection.split('\n').slice(0, 20)) {
+    for (const match of line.matchAll(/`([a-z_]+)`/g)) {
+      if (SECTION_SCHEMA_KEYS.includes(match[1])) keyNames.push(match[1]);
+    }
+  }
+  assert(problems.length === 0, problems.join('; '));
+  assert(typeNames.length >= 30, `only ${typeNames.length} setting types documented`);
+  assert(new Set(keyNames).size >= 8, `only ${new Set(keyNames).size} schema keys documented`);
+  return `${typeNames.length} setting types, ${new Set(keyNames).size} schema keys`;
+});
+check('I6 Web Pixel events are standard events', () => {
+  const file = join(SKILL_DIR, 'references', 'legal-and-analytics.md');
+  const text = read(file);
+  const known = new Set(STANDARD_EVENTS);
+  const used = [...text.matchAll(/analytics\.subscribe\(\s*'([a-z_]+)'/g)].map((m) => m[1]);
+  const bad = used.filter((name) => !known.has(name));
+  assert(used.length > 0, 'no analytics.subscribe call found in the reference');
+  assert(bad.length === 0, `not a standard event: ${bad.join(', ')}`);
+  const listed = STANDARD_EVENTS.filter((name) => new RegExp(`\`${name}\``).test(text));
+  assert(listed.length === STANDARD_EVENTS.length, `only ${listed.length} of ${STANDARD_EVENTS.length} events documented`);
+  return `${used.length} subscriptions, ${listed.length} events documented`;
+});
+check('I7 security severities match the official source', () => {
+  const file = join(SKILL_DIR, 'references', 'security-checklist.md');
+  const problems = [];
+  let seen = 0;
+  for (const line of read(file).split('\n')) {
+    const cell = /^\|\s*([A-Z][A-Z_]{6,})\s*\|\s*([a-z]+)\s*\|/.exec(line);
+    if (!cell) continue;
+    seen += 1;
+    const [, id, severity] = cell;
+    if (!(id in SECURITY_SEVERITIES)) problems.push(`${id} is not an official check id`);
+    else if (SECURITY_SEVERITIES[id] !== severity) problems.push(`${id}: ${severity} != ${SECURITY_SEVERITIES[id]}`);
+  }
+  assert(seen === SECURITY_CHECKS.length, `documented ${seen} rows, expected ${SECURITY_CHECKS.length}`);
+  assert(problems.length === 0, problems.join('; '));
+  return `${seen} severities match the pinned source`;
 });
 
 /* ------------------------------------------------------------------ */

@@ -4,7 +4,7 @@ description: Use when building, changing, or reviewing a Shopify storefront or t
 license: MIT
 metadata:
   author: Salvatore Cuccaro
-  version: "0.1.0"
+  version: "0.1.1"
   verified-on: "2026-11-20"
 ---
 
@@ -52,7 +52,7 @@ Never edit a live theme in place. Exit: a local theme directory that `shopify th
 
 **7. Cart and AJAX.** Wire add/update/remove through the Cart AJAX API and the Section Rendering API. Exit: quantity, price, subtotal and counter update without reload, including after an error.
 
-**8. Account and checkout.** Customer accounts, order templates, and checkout customization through Checkout Extensibility only. Exit: a written statement of which checkout targets or Functions are used, or an explicit "no checkout customization".
+**8. Account and checkout.** Customer accounts, order templates, and checkout customization through Checkout Extensibility only. Check the plan first: on stores below Plus, information, shipping and payment step extensions and cart transform price overrides do not apply, so say that instead of shipping dead code. Exit: a written statement of which checkout targets or Functions are used, or an explicit "no checkout customization".
 
 **9. Apps and integrations.** Theme app extensions, app blocks, app proxies and webhooks. Exit: each integration has an owner, a documented contract and a failure mode.
 
@@ -100,7 +100,7 @@ Above-the-fold hero images use `loading: 'eager'` and `fetchpriority: 'high'`. D
 
 **Forms.** Use the `{% form %}` tag (`'product'`, `'cart'`, `'customer'`, `'customer_login'`, `'customer_address'`, `'localization'`, `'contact'`). It emits the CSRF token and correct action. A hand-written `<form action="/cart/add">` is a defect.
 
-**Money.** Prices are integers in the smallest currency unit. Format with the `money` filter (or `money_with_currency`), never with manual division. Compare prices with `money_without_trailing_zeros` only for display.
+**Money.** Prices are integers in the smallest currency unit. Compare them as integers (`product.compare_at_price > product.price`), and format only at the sink with `money`, `money_with_currency` or `money_without_trailing_zeros`. Never divide by 100 by hand.
 
 **Null safety.** Guard every optional object (`{% if product.featured_image %}`). A theme that throws on a product without an image is broken.
 
@@ -113,7 +113,7 @@ Full object, tag and filter reference: `references/liquid-patterns.md`.
 - Give every section a stable `class` and scope its CSS to it. Global selectors leak between sections.
 - Blocks need `{{ block.shopify_attributes }}` on their wrapper element; without it the editor cannot select or drag them.
 - Set `max_blocks` when the design breaks past a count. Set `enabled_on`/`disabled_on` with `templates` or `groups` when a section must not appear everywhere.
-- Merchant text settings render as text, not HTML. Use `richtext` for formatted content and render it with `metafield_tag`-equivalent escaping; a `text` setting rendered as HTML is a smuggling vector (`TEXT_SETTING_HTML_SMUGGLING`).
+- A `text` or `textarea` setting is plain text: render it as text, never as HTML. A `richtext` setting is sanitised by the platform on input: output it as HTML. Rendering a `text` setting as HTML is a smuggling vector (`TEXT_SETTING_HTML_SMUGGLING`).
 - Editor labels (section name, setting labels, block names) are translated in `locales/*.schema.json`, not in the section file. Section-owned runtime strings can live in the schema `locales` object and are read as `sections.<file-name>.<key>`. Do not hardcode English labels anywhere.
 - Section JavaScript goes in `{% javascript %}` or an asset loaded with `defer`. No parser-blocking script in a section.
 - App blocks (`block.type` starting with `shopify://apps/`) must be supported where the merchant expects apps: product page, cart, and the section's `blocks` array. Test with an app block, not only with your own blocks.
@@ -136,7 +136,7 @@ Endpoints (all relative, all JSON):
 Rules:
 
 1. **Never trust the client.** Re-render totals from the server response, not from arithmetic on the DOM.
-2. **Handle 422.** A failed add returns a body with `status`, `message` and `description` (for example "sold out" or "quantity too high"). Show `description` to the customer; never swallow it.
+2. **Handle 422.** A failed add returns a body with `status`, `message` and `description`. Show `description`; never swallow it. Remember that adding more than the available stock adds the maximum available **and** returns 422, so reconcile the drawer with the response instead of assuming success.
 3. **Use the Section Rendering API** instead of hand-patching markup. Send `sections` (comma-separated section ids) and `sections_url` (usually `window.location.pathname`) with the cart request, then replace the returned HTML:
 
    ```js
@@ -249,6 +249,7 @@ Manual checks that no tool replaces:
 | "The API version still works." | Supported versions expire after 12 months. Pin a current version now. |
 | "The client can compute the total." | Discounts, taxes and Markets make client arithmetic wrong. Use the server response. |
 | "Presets are optional." | Without a preset the merchant cannot add the section. It is a dead section. |
+| "Checkout extensions work on any plan." | Information, shipping and payment step extensions, and cart transform price overrides, need a development store or Plus. Check the plan first. |
 
 ## Red flags
 

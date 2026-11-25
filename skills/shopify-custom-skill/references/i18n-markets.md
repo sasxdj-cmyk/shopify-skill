@@ -122,7 +122,7 @@ Rules:
 
 ## Verification
 
-- [ ] `shopify theme check` → no `MatchingTranslations` or `DefaultLocale` errors.
+- [ ] `shopify theme check` → no `MatchingTranslations` or `TranslationKeyExists` errors.
 - [ ] Switch language: header, footer, product page, cart, search, 404, account pages all translated.
 - [ ] Switch country: prices, currency symbol, shipping options and availability change.
 - [ ] Product URL keeps the market prefix after switching.

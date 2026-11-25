@@ -26,16 +26,18 @@ shopify theme delete --store <store> --theme <id>
 Rules:
 
 - `theme pull` before any change, and pull into a git branch. Never edit the live theme in the admin.
-- `theme push --unpublished` creates or updates an unpublished theme; it cannot take the store down.
-- `theme push --live` publishes immediately. Require an explicit decision and a recorded rollback id.
-- `--force` overwrites remote files that do not exist locally (it can delete sections). Use it only when you mean a full sync.
-- `--json` makes output machine-readable for CI and for the evidence you paste.
+- `theme push --unpublished` **creates a new** unpublished theme and pushes to it. To update an existing unpublished theme, pass `--theme <id>`. In a non-interactive environment you must pass one of `--development`, `--live`, `--theme` or `--unpublished`, or the command stops to ask.
+- `theme push --publish` uploads and then publishes. Publishing the live theme from CI also needs `--allow-live`, otherwise the CLI refuses.
+- Pushing **deletes remote files that do not exist locally**. That is the default behaviour, and it is how a partial checkout wipes sections. `--nodelete` prevents it; use it whenever the local copy is incomplete.
+- `--force` is a hidden escape hatch that only skips the "this does not look like a theme directory" confirmation. It is not a sync mode and it does not make a push safe.
+- `--strict` makes the push fail unless Theme Check reports zero errors (warnings allowed). Cheaper than finding out after the upload.
+- `--json` makes output machine-readable for CI and for the evidence you paste; `push` and `list` support it.
 - `theme dev` proxies the real store: logged-in state, apps and checkout behave like production. Use it for cart and account testing, not a static preview.
 - `theme check` runs locally and in CI. Fix errors, review warnings, and never suppress a rule globally to make the build green.
 
 ## Theme Check
 
-The current check set is the one listed in Shopify's checks reference. Names and severities below are copied from that page (verified 2026-11-20). A rule that is not on this list does not exist in the current CLI.
+The reference lists 78 checks (79 table rows; `MaxFileSize` appears twice). The table below is the subset worth naming in a review; every name and severity is copied from that page and re-read on 2026-11-24. A rule that is not on the reference does not exist in the current CLI.
 
 | Rule | Severity | Meaning |
 |------|----------|---------|
@@ -72,18 +74,40 @@ The current check set is the one listed in Shopify's checks reference. Names and
 | `DeprecatedFilter` | Warning | No removed filters |
 | `AppBlockValidTags` | Error | App block markup uses allowed tags |
 
-Legacy names to avoid: the deprecated Ruby gem (`Shopify/theme-check`, 44 check files) still uses `TemplateLength`, `NestedSnippet`, `ImgLazyLoading`, `DefaultLocale`, `SchemaJsonFormat`, `ParserBlockingJavaScript`, `UnusedSnippet`. They are not in the current reference, so do not cite them as current rules.
+Legacy names to avoid: the deprecated Ruby gem (`Shopify/theme-check`, 45 files under `lib/theme_check/checks/` of which 44 are checks and one is the `TEMPLATE.rb.erb` scaffold) still uses `TemplateLength`, `NestedSnippet`, `ImgLazyLoading`, `DefaultLocale`, `SchemaJsonFormat`, `ParserBlockingJavaScript`, `ParserBlockingScriptTag`, `UnusedSnippet`. None of them is in the current reference, so none is a current rule. The naming trap: the current check is `ParserBlockingScript` even though its documentation slug is `parser-blocking-javascript`, while `ParserBlockingJavaScript` is the legacy name — the two are one character of meaning apart and easy to swap. `MissingSnippet` is not a check in either generation; the current name for a missing render target is `MissingTemplate`.
 
 Useful invocations:
 
 ```bash
-shopify theme check --fail-level error          # CI gate: errors fail, warnings report
-shopify theme check --output json > check.json  # machine-readable evidence
-shopify theme check --list                      # enabled checks with severities
-shopify theme check -C theme-check:all          # every check, for a one-off audit
+shopify theme check                              # text output, exit 1 on any error
+shopify theme check --fail-level warning         # stricter CI gate
+shopify theme check --output json > check.json   # machine-readable evidence
+shopify theme check --list                       # active checks with severities
+shopify theme check --print                      # the resolved config, to STDOUT
+shopify theme check --init                       # write a .theme-check.yml
+shopify theme check --auto-correct               # fix what can be fixed automatically
+shopify theme check -C theme-check:all           # every check, one-off audit
+shopify theme check -C ./audit.theme-check.yml   # or a config file path
 ```
 
-Severity is configurable per check in `.theme-check.yml` (`error`, `warning`, `info`, or `0`, `1`, `2`). Do not lower a severity to make a build green; fix the code or record a documented exception.
+Flags, as defined by the CLI (verified in `Shopify/cli`, `packages/theme/src/cli/commands/theme/check.ts`, 2026-11-24):
+
+| Flag | Alias | Values |
+|------|-------|--------|
+| `--fail-level` | | `crash`, `error` (default), `suggestion`, `style`, `warning`, `info` |
+| `--output` | `-o` | `text` (default), `json`; writes to STDOUT |
+| `--config` | `-C` | a path, **or** a magic config: `theme-check:all`, `theme-check:recommended`, `theme-check:theme-app-extension` |
+| `--list` | `-l` | lists active checks |
+| `--print` | | prints the active config |
+| `--init` | | generates `.theme-check.yml` |
+| `--auto-correct` | `-a` | applies correctable fixes |
+
+Two traps:
+
+- `--fail-level` accepts both the documented levels and `crash`/`suggestion`/`style`. Docs listing only three of them are incomplete, not authoritative.
+- The configuration example on Shopify's configuration page still uses `TemplateLength`, which is a **legacy Ruby-gem name**. Copying that YAML teaches a check that the current CLI does not run. Generate the file with `--init` instead of copying an example.
+
+Severity in `.theme-check.yml` is `error`, `warning` or `info` (the internal enum is `0`, `1`, `2` in that order). Do not lower a severity to make a build green; fix the code or record a documented exception.
 
 What Theme Check cannot see, and you must test yourself:
 
@@ -173,6 +197,8 @@ Rollback is a publish, not a restore: keep the previous theme installed until th
 - https://shopify.dev/docs/storefronts/themes/tools/cli — theme commands (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/tools/theme-check — Theme Check usage and configuration (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/tools/theme-check/checks — rule list (verified on 2026-11-20)
+- https://shopify.dev/docs/storefronts/themes/tools/theme-check/commands — `theme check` flags (verified on 2026-11-24)
+- https://github.com/Shopify/cli/blob/main/packages/theme/src/cli/commands/theme/check.ts — the real option lists for `--fail-level`, `--output` and `--config` (verified on 2026-11-24)
 - https://shopify.dev/docs/storefronts/themes/best-practices/performance — performance guidance (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/best-practices/accessibility — accessibility guidance (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/seo — SEO guidance (verified on 2026-11-20)

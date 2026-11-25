@@ -263,18 +263,35 @@ Section groups (`sections/header-group.json`, `sections/footer-group.json`) let 
 
 ## Theme Check rules that touch structure
 
-| Rule | What it enforces |
-|------|------------------|
-| `ValidSchema` | Schema is valid JSON with known keys and types |
-| `SchemaJsonFormat` | Schema is formatted as valid JSON (no trailing commas, no Liquid) |
-| `TemplateLength` | Template files stay under 600 lines |
-| `NestedSnippet` | Snippet nesting no deeper than 3 |
-| `PaginationSize` | `paginate` uses a page size between 1 and 50 |
-| `AppBlockValidTags` | App block markup uses allowed tags |
-| `MatchingTranslations` | Locale files have the same keys |
-| `DefaultLocale` | A default locale file exists |
-| `MissingTemplate` / `MissingSnippet` / `MissingAsset` | Referenced files exist |
-| `ContentForHeaderModification` | `content_for_header` is not modified |
+| Rule | Severity | What it enforces here |
+|------|----------|-----------------------|
+| `ValidSchema` | warning | Schema parses and uses known keys and types |
+| `ValidSchemaName` / `ValidSchemaTranslations` | error | Section and block names, and their schema translation keys, resolve |
+| `SchemaSectionOrBlockOnly` | error | `{% schema %}` appears only in section and block files |
+| `SchemaPresetsStaticBlocks` | error | A static block in `presets` has a matching `{% content_for "block" %}` |
+| `JSONSyntaxError` / `JSONMissingSection` / `JSONMissingBlock` | error | A JSON template parses and only references sections and blocks that exist |
+| `MissingTemplate` | warning | Every `render`, `section` and `include` target exists |
+| `MissingAsset` | error | Every `asset_url` and `asset_img_url` target exists |
+| `MatchingTranslations` | warning | Locale files share the same keys |
+| `TranslationKeyExists` | error | Every `t` key exists in the locale files |
+| `ContentForHeaderModification` | error | `content_for_header` is untouched |
+| `RequiredLayoutThemeObject` | error | `theme.liquid` renders `content_for_header` and `content_for_layout` |
+| `MaxFileSize` | error | Files stay under the per-directory byte limit |
+| `PaginationSize` | warning | `paginate` page size stays inside the configured window |
+
+File-size limits that `MaxFileSize` enforces, as published:
+
+| Path | Limit |
+|------|-------|
+| `assets` | 20 MB |
+| `locales` | 1.5 MB |
+| `config/settings_data.json` | 1.5 MB |
+| `config/settings_schema.json` | 512 KB |
+| `templates/*.json` | 512 KB |
+| `sections/*.json` | 512 KB |
+| `blocks`, `config`, `layout`, `snippets`, `templates`, `sections` | 256 KB |
+
+Theme Check does not count bytes inside `{% schema %}` toward the non-asset limits, and skips `_drafts`. A 300 KB snippet that is 90% schema still fails, so move merchant copy into settings instead of inlining it.
 
 ## Sources
 
@@ -285,4 +302,5 @@ Section groups (`sections/header-group.json`, `sections/footer-group.json`) let 
 - https://shopify.dev/docs/storefronts/themes/architecture/blocks — blocks and `shopify_attributes` (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/architecture/locales — locale files (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/architecture/settings — settings schema and data (verified on 2026-11-20)
+- https://shopify.dev/docs/storefronts/themes/tools/theme-check/checks/max-file-size — per-directory file-size limits enforced by `MaxFileSize` (verified on 2026-11-24)
 - https://shopify.dev/docs/storefronts/themes/tools/theme-check/checks — rule list (verified on 2026-11-20)

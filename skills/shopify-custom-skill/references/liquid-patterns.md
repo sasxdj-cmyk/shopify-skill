@@ -48,7 +48,7 @@ Objects that may be `nil` must be guarded. `{{ product.featured_image }}` on a p
 | `{% section 'name' %}` | render a section | static sections only (header, footer) |
 | `{% sections 'header-group' %}` | render a section group | for header/footer groups |
 | `{% content_for 'blocks' %}` | render theme blocks | blocks defined in `blocks/` |
-| `{% form 'type' %}` | platform form | emits CSRF token and action |
+| `{% form 'product' %}` | platform form, one of the 15 published types | emits CSRF token and action |
 | `{% paginate x by n %}` | pagination | `n` is 1–250 in Liquid; Theme Check's `PaginationSize` defaults to a 1–50 window |
 | `{% liquid %}` | multi-statement block | no output; use for setup |
 | `{% comment %}` / `{% # inline %}` | comments | `{% # %}` is the inline form |
@@ -72,7 +72,7 @@ Objects that may be `nil` must be guarded. `{{ product.featured_image }}` on a p
 
 **URLs and HTML:** `link_to`, `link_to_vendor`, `link_to_type`, `link_to_tag`, `link_to_add_tag`, `link_to_remove_tag`, `url_for_type`, `url_for_vendor`, `within`, `stylesheet_tag`, `script_tag`, `img_tag`.
 
-**Text and translation:** `t`, `translate`, `pluralize`, `handleize`, `handle`, `camelcase`, `highlight`.
+**Text and translation:** `t`, `translate`, `pluralize`, `handleize`, `highlight`.
 
 **Metafields:** `metafield_tag`, `metafield_text`, `weight_with_unit`, `unit_price_with_measurement`.
 
@@ -82,7 +82,7 @@ Objects that may be `nil` must be guarded. `{{ product.featured_image }}` on a p
 
 **Colors and fonts:** `color_to_rgb`, `color_to_hsl`, `color_to_hex`, `color_extract`, `color_brightness`, `color_modify`, `color_lighten`, `color_darken`, `color_saturate`, `color_desaturate`, `color_mix`, `color_contrast`, `color_difference`, `brightness_difference`, `font_face`, `font_modify`.
 
-**SEO:** `json`, `structured_data` (where available), `canonical_url` as an object.
+**SEO:** `json`, `structured_data` (a schema.org Product/ProductGroup for `product`, an Article for `article`), and `canonical_url` as an object.
 
 ## Escaping matrix
 
@@ -188,7 +188,7 @@ Rules:
 ```
 
 - The `form` tag emits the CSRF token, `form_type`, `utf8` and the correct `action`. Hand-written forms are a defect.
-- Available types: `product`, `cart`, `customer`, `customer_login`, `customer_register`, `customer_address`, `customer_password`, `localization`, `contact`, `newsletter` (deprecated alias of `customer`), `storefront_password`.
+- The 15 available types, as published: `activate_customer_password`, `cart`, `contact`, `create_customer`, `currency`, `customer`, `customer_address`, `customer_login`, `guest_login`, `localization`, `new_comment`, `product`, `recover_customer_password`, `reset_customer_password`, `storefront_password`. Note the renames: account creation is `create_customer` (not `customer_register`), password reset has three separate types, and there is no `newsletter` type — a newsletter signup is a `contact` form with a tag.
 - `form.errors` and `form.posted_successfully?` drive validation messages. Render them with `aria-live`.
 - Disable the submit button only for genuinely unavailable states, and re-enable it on error; a permanently disabled button is a lost sale.
 - For AJAX submit, intercept `submit`, post to the form's `action` with `FormData`, and keep the non-JS path working.
@@ -226,13 +226,13 @@ Rules:
 
 - `t` reads `locales/<locale>.json`. Missing keys fall back to the default locale and are reported by `MatchingTranslations`.
 - `localization.language.iso_code` and `localization.country.iso_code` describe the buyer context.
-- `{{ form 'localization' }}` with `language` and `country` selects switches the buyer context; it preserves the current path.
+- `{% form 'localization' %}` with `language` and `country` selects switches the buyer context; it preserves the current path.
 - Use `routes.root_url` instead of `'/'` so subfolder markets keep working.
 
 ## Performance
 
 - One stylesheet and one deferred script in the layout; per-section assets through `{% stylesheet %}` / `{% javascript %}`.
-- No parser-blocking `<script>` in `<head>`; Theme Check flags it (`ParserBlockingJavaScript`).
+- No parser-blocking `<script>` in `<head>`; Theme Check flags it (`ParserBlockingScript`).
 - Preconnect to `cdn.shopify.com` once (`CdnPreconnect`); preload only the LCP image and the primary font (`AssetPreload`).
 - Avoid `capture` in loops; it allocates a string per iteration.
 - `for` loops over large collections: paginate, or use `limit:`.
@@ -260,3 +260,6 @@ Rules:
 - https://shopify.dev/docs/storefronts/themes/best-practices/performance — performance guidance (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/best-practices/accessibility — accessibility guidance (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/architecture/locales/storefront-locale-files — locale file format (verified on 2026-11-20)
+- https://shopify.dev/docs/api/liquid/tags/form — the 15 form types (verified on 2026-11-24)
+- https://shopify.dev/docs/api/liquid/tags/paginate — page size 1–250, the 25,000-item ceiling, the 50-item default fetch (verified on 2026-11-24)
+- https://shopify.dev/docs/api/liquid/filters/structured_data — `product` and `article` only (verified on 2026-11-24)

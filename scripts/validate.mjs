@@ -173,7 +173,7 @@ const SECURITY_CHECKS = [
   'UNSCOPED_SHOP_CONFIG_WRITE',
   'WEAK_SHOP_VALIDATION',
 ];
-const VERSION = '0.1.1';
+const VERSION = '0.1.2';
 // Severity published in Shopify/cli at
 // packages/app/src/cli/services/app-security-engine/checks/<ID>.md on 2026-11-20.
 // A drift here means the checklist teaches the wrong priority.
@@ -218,91 +218,99 @@ const SECURITY_SEVERITIES = {
 // Check names published in https://shopify.dev/docs/storefronts/themes/tools/theme-check/checks
 // on 2026-11-20. The current CLI only runs these; the deprecated Ruby gem had a
 // different set, which is why a legacy name in the docs is a bug.
-const THEME_CHECK_CURRENT = [
-  'AppBlockMissingSchema',
-  'AppBlockValidTags',
-  'AssetPreload',
-  'AssetSizeAppBlockCSS',
-  'AssetSizeAppBlockJavascript',
-  'AssetSizeCSS',
-  'AssetSizeJavaScript',
-  'BlockIdUsage',
-  'CdnPreconnect',
-  'ContentForHeaderModification',
-  'DeprecateBgsizes',
-  'DeprecateLazysizes',
-  'DeprecatedFilter',
-  'DeprecatedFontsOnSectionsAndBlocks',
-  'DeprecatedFontsOnSettingsData',
-  'DeprecatedFontsOnSettingsSchema',
-  'DeprecatedTag',
-  'DuplicateContentForArguments',
-  'DuplicateRenderSnippetArguments',
-  'EmptyBlockContent',
-  'ExcessiveSettingsCount',
-  'HardcodedRoutes',
-  'ImgWidthAndHeight',
-  'JavascriptOncePerFile',
-  'JavascriptTagInWrongFile',
-  'JSONMissingBlock',
-  'JSONMissingSection',
-  'JSONSyntaxError',
-  'LiquidComplexity',
-  'LiquidFreeSettings',
-  'LiquidHTMLSyntaxError',
-  'LiquidNestingDepth',
-  'LiquidSyntaxError',
-  'MatchingTranslations',
-  'MaxFileSize',
-  'MissingAsset',
-  'MissingContentForArguments',
-  'MissingRenderSnippetArguments',
-  'MissingTemplate',
-  'OrphanedSnippet',
-  'PaginationSize',
-  'ParserBlockingScript',
-  'RemoteAsset',
-  'RequiredLayoutThemeObject',
-  'ReservedDocParamNames',
-  'SchemaOncePerFile',
-  'SchemaPresetsBlockOrder',
-  'SchemaPresetsStaticBlocks',
-  'SchemaSectionOrBlockOnly',
-  'StaticStylesheetAndJavascriptTags',
-  'StylesheetOncePerFile',
-  'StylesheetTagInWrongFile',
-  'TranslationKeyExists',
-  'UnclosedHTMLElement',
-  'UndefinedObject',
-  'UniqueDocParamNames',
-  'UniqueStaticBlockId',
-  'UnknownFilter',
-  'UnrecognizedContentForArguments',
-  'UnrecognizedRenderSnippetArguments',
-  'UnsupportedDocTag',
-  'UnsupportedFilterArguments',
-  'UnusedAssign',
-  'UnusedDocParam',
-  'ValidBlockTarget',
-  'ValidContentForArgumentTypes',
-  'ValidContentForArguments',
-  'ValidDocParamTypes',
-  'ValidHTMLTranslation',
-  'ValidLocalBlocks',
-  'ValidRenderSnippetArgumentTypes',
-  'ValidSchema',
-  'ValidSchemaName',
-  'ValidSchemaTranslations',
-  'ValidScopedCSSClass',
-  'ValidSettingsKey',
-  'ValidStaticBlockType',
-  'VariableName',
-];
+// The 78 checks (79 table rows, MaxFileSize is listed twice) published at
+// https://shopify.dev/docs/storefronts/themes/tools/theme-check/checks
+// with their severity, re-read on 2026-11-24. A name in the docs that is not
+// a key here, or a severity that disagrees, means the docs teach a stale rule.
+// Trap worth knowing: the current name is ParserBlockingScript even though its
+// page slug is parser-blocking-javascript; ParserBlockingJavaScript is the
+// deprecated Ruby-gem name.
+const THEME_CHECK_TABLE = {
+  AppBlockMissingSchema: 'error',
+  AppBlockValidTags: 'error',
+  AssetPreload: 'warning',
+  AssetSizeAppBlockCSS: 'error',
+  AssetSizeAppBlockJavascript: 'error',
+  AssetSizeCSS: 'error',
+  AssetSizeJavaScript: 'error',
+  BlockIdUsage: 'warning',
+  CdnPreconnect: 'warning',
+  ContentForHeaderModification: 'error',
+  DeprecateBgsizes: 'warning',
+  DeprecateLazysizes: 'warning',
+  DeprecatedFilter: 'warning',
+  DeprecatedFontsOnSectionsAndBlocks: 'warning',
+  DeprecatedFontsOnSettingsData: 'warning',
+  DeprecatedFontsOnSettingsSchema: 'warning',
+  DeprecatedTag: 'error',
+  DuplicateContentForArguments: 'warning',
+  DuplicateRenderSnippetArguments: 'warning',
+  EmptyBlockContent: 'warning',
+  ExcessiveSettingsCount: 'warning',
+  HardcodedRoutes: 'warning',
+  ImgWidthAndHeight: 'error',
+  JavascriptOncePerFile: 'error',
+  JavascriptTagInWrongFile: 'error',
+  JSONMissingBlock: 'error',
+  JSONMissingSection: 'error',
+  JSONSyntaxError: 'error',
+  LiquidComplexity: 'warning',
+  LiquidFreeSettings: 'warning',
+  LiquidHTMLSyntaxError: 'error',
+  LiquidNestingDepth: 'warning',
+  LiquidSyntaxError: 'error',
+  MatchingTranslations: 'warning',
+  MaxFileSize: 'error',
+  MissingAsset: 'error',
+  MissingContentForArguments: 'warning',
+  MissingRenderSnippetArguments: 'warning',
+  MissingTemplate: 'warning',
+  OrphanedSnippet: 'warning',
+  PaginationSize: 'warning',
+  ParserBlockingScript: 'error',
+  RemoteAsset: 'warning',
+  RequiredLayoutThemeObject: 'error',
+  ReservedDocParamNames: 'error',
+  SchemaOncePerFile: 'error',
+  SchemaPresetsBlockOrder: 'warning',
+  SchemaPresetsStaticBlocks: 'error',
+  SchemaSectionOrBlockOnly: 'error',
+  StaticStylesheetAndJavascriptTags: 'error',
+  StylesheetOncePerFile: 'error',
+  StylesheetTagInWrongFile: 'error',
+  TranslationKeyExists: 'error',
+  UnclosedHTMLElement: 'error',
+  UndefinedObject: 'error',
+  UniqueDocParamNames: 'error',
+  UniqueStaticBlockId: 'error',
+  UnknownFilter: 'error',
+  UnrecognizedContentForArguments: 'warning',
+  UnrecognizedRenderSnippetArguments: 'warning',
+  UnsupportedDocTag: 'error',
+  UnsupportedFilterArguments: 'error',
+  UnusedAssign: 'warning',
+  UnusedDocParam: 'warning',
+  ValidBlockTarget: 'error',
+  ValidContentForArgumentTypes: 'warning',
+  ValidContentForArguments: 'error',
+  ValidDocParamTypes: 'error',
+  ValidHTMLTranslation: 'warning',
+  ValidLocalBlocks: 'error',
+  ValidRenderSnippetArgumentTypes: 'warning',
+  ValidSchema: 'warning',
+  ValidSchemaName: 'error',
+  ValidSchemaTranslations: 'error',
+  ValidScopedCSSClass: 'warning',
+  ValidSettingsKey: 'error',
+  ValidStaticBlockType: 'error',
+  VariableName: 'warning',
+};
 const THEME_CHECK_LEGACY = [
   'DefaultLocale',
   'ImgLazyLoading',
   'NestedSnippet',
   'ParserBlockingJavaScript',
+  'ParserBlockingScriptTag',
   'SchemaJsonFormat',
   'TemplateLength',
   'UnusedSnippet',
@@ -361,6 +369,27 @@ const SETTING_TYPES = [
   'url',
   'video',
   'video_url',
+];
+// The 15 form types published at
+// https://shopify.dev/docs/api/liquid/tags/form on 2026-11-24. A type that is
+// not here (customer_register, customer_password, newsletter) is a classic
+// hallucination: it looks plausible and fails at render time.
+const FORM_TYPES = [
+  'activate_customer_password',
+  'cart',
+  'contact',
+  'create_customer',
+  'currency',
+  'customer',
+  'customer_address',
+  'customer_login',
+  'guest_login',
+  'localization',
+  'new_comment',
+  'product',
+  'recover_customer_password',
+  'reset_customer_password',
+  'storefront_password',
 ];
 // The 15 standard Web Pixel events published at
 // https://shopify.dev/docs/api/web-pixels-api/standard-events on 2026-11-20.
@@ -847,35 +876,53 @@ check('I3 asset docs point at the real install path', () => {
   assert(/snippets\/featured-product-card\.liquid/.test(card), 'card must document its own path');
   return 'snippets/featured-product-card.liquid';
 });
-check('I4 Theme Check names are current, not legacy', () => {
+check('I4 Theme Check names and severities are current', () => {
   const file = join(SKILL_DIR, 'references', 'cli-and-qa.md');
   const lines = read(file).split('\n');
-  const current = new Set(THEME_CHECK_CURRENT);
   const legacy = new Set(THEME_CHECK_LEGACY);
   const problems = [];
   let counted = 0;
-  for (const line of lines) {
-    const legacyLine = /^Legacy names to avoid/.test(line);
-    const cell = /^\|\s*`([^`]+)`/.exec(line);
-    if (cell) {
-      for (const name of cell[1].split('/').map((n) => n.trim())) {
-        counted += 1;
-        if (!current.has(name)) problems.push(`not a current check: ${name}`);
+  // Only the Theme Check table is a rule table: it starts at its header and
+  // ends at the next heading. Other tables document CLI flags, not checks.
+  const start = lines.findIndex((l) => /^\|\s*Rule\s*\|\s*Severity\s*\|\s*Meaning\s*\|$/.test(l));
+  assert(start !== -1, 'the Theme Check table header is missing');
+  // A markdown table is contiguous: take rows until the first line that is not one.
+  const table = [];
+  for (let i = start; i < lines.length && /^\|/.test(lines[i]); i += 1) table.push(lines[i]);
+  for (const line of table) {
+    const row = /^\|\s*`([^`]+)`/.exec(line);
+    if (!row) continue;
+    const cells = line.split('|').map((c) => c.trim());
+    const severity = (cells[2] || '').toLowerCase();
+    for (const name of row[1].split('/').map((n) => n.trim())) {
+      counted += 1;
+      if (!(name in THEME_CHECK_TABLE)) problems.push(`not a current check: ${name}`);
+      else if (THEME_CHECK_TABLE[name] !== severity) {
+        problems.push(`${name}: documented ${severity || '(none)'} != ${THEME_CHECK_TABLE[name]}`);
       }
     }
+  }
+  for (const line of lines) {
+    // A legacy name is allowed only where the text frames it as legacy.
+    const framed = /^Legacy names to avoid/.test(line) || /legacy|deprecated/i.test(line);
     for (const name of legacy) {
-      if (new RegExp(`\\b${name}\\b`).test(line) && !legacyLine) problems.push(`legacy name outside the warning: ${name}`);
+      if (!framed && new RegExp(`\\b${name}\\b`).test(line)) {
+        problems.push(`legacy name without the "legacy" framing: ${name}`);
+      }
     }
   }
   assert(problems.length === 0, problems.join('; '));
   assert(counted >= 20, `only ${counted} check names documented`);
-  return `${counted} current checks, ${legacy.size} legacy names quarantined`;
+  return `${counted} checks with matching severities, ${legacy.size} legacy names quarantined`;
 });
 check('I5 schema keys and setting types are real', () => {
   const file = join(SKILL_DIR, 'references', 'theme-architecture.md');
   const text = read(file);
   const problems = [];
-  const typesSection = text.split('## Setting types')[1] || '';
+  // The setting-type table ends at the next heading; later tables in the file
+  // (Theme Check rules, file sizes) are not setting types.
+  const afterHeader = text.split('## Setting types')[1] || '';
+  const typesSection = afterHeader.split(/\n##\s/)[0];
   const typeNames = [];
   for (const line of typesSection.split('\n')) {
     const cell = /^\|\s*`([a-z_]+)`/.exec(line);
@@ -923,6 +970,58 @@ check('I7 security severities match the official source', () => {
   assert(seen === SECURITY_CHECKS.length, `documented ${seen} rows, expected ${SECURITY_CHECKS.length}`);
   assert(problems.length === 0, problems.join('; '));
   return `${seen} severities match the pinned source`;
+});
+check('I8 legacy Theme Check names appear only as legacy', () => {
+  const legacy = THEME_CHECK_LEGACY;
+  const problems = [];
+  let scanned = 0;
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!/\.(md|liquid)$/.test(entry.name)) continue;
+      scanned += 1;
+      for (const line of read(full).split('\n')) {
+        const framed = /legacy|deprecated/i.test(line);
+        for (const name of legacy) {
+          if (!framed && new RegExp(`\\b${name}\\b`).test(line)) {
+            problems.push(`${entry.name}: ${name} is presented as current`);
+          }
+        }
+      }
+    }
+  };
+  walk(SKILL_DIR);
+  assert(scanned > 10, `only ${scanned} files scanned`);
+  assert(problems.length === 0, problems.join('; '));
+  return `${scanned} files clean of ${legacy.length} legacy names`;
+});
+check('I9 form types are real form types', () => {
+  const problems = [];
+  let used = 0;
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!/\.(md|liquid)$/.test(entry.name)) continue;
+      for (const line of read(full).split('\n')) {
+        for (const match of line.matchAll(/\{%-?\s*form\s+'([a-z_]+)'/g)) {
+          used += 1;
+          if (!FORM_TYPES.includes(match[1])) problems.push(`${entry.name}: {% form '${match[1]}' %}`);
+        }
+      }
+    }
+  };
+  walk(SKILL_DIR);
+  assert(used > 0, 'no form tag found in the skill');
+  assert(problems.length === 0, problems.join('; '));
+  return `${used} form tags use one of ${FORM_TYPES.length} published types`;
 });
 
 /* ------------------------------------------------------------------ */

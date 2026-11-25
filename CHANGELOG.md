@@ -2,6 +2,29 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-11-25
+
+### Fixed
+
+- `references/cli-and-qa.md`: the `theme push` rules were wrong in the way that loses merchant work. `--force` is a hidden flag that only skips the "this does not look like a theme directory" confirmation, not a sync mode; deleting remote files is the **default** behaviour and `--nodelete` is what prevents it; `--unpublished` **creates a new** theme instead of updating one; `--publish` and `--allow-live` are documented; `--strict` is added as the pre-push gate.
+- `references/cli-and-qa.md`: the `theme check` flag table is now taken from the CLI source. `--fail-level` accepts `crash`, `error`, `suggestion`, `style`, `warning` and `info`, `--output` accepts `text` and `json` and its value is a format, not a filename, and `-C/--config` accepts both a path and the magic values `theme-check:all`, `theme-check:recommended`, `theme-check:theme-app-extension`.
+- `references/cli-and-qa.md`: the Theme Check section states that the reference has 78 checks (79 rows, `MaxFileSize` twice), documents the `ParserBlockingScript` versus `ParserBlockingJavaScript` naming trap explicitly, and explains that the Ruby gem has 45 files of which 44 are checks.
+- `references/liquid-patterns.md`: the form types were invented. The published 15 are `activate_customer_password`, `cart`, `contact`, `create_customer`, `currency`, `customer`, `customer_address`, `customer_login`, `guest_login`, `localization`, `new_comment`, `product`, `recover_customer_password`, `reset_customer_password`, `storefront_password`; `customer_register`, `customer_password` and `newsletter` do not exist. Also fixed `{{ form 'localization' }}` to `{% form 'localization' %}`, removed the non-existent `handle` and `camelcase` filters, and made the `structured_data` claim precise (`product` and `article` only).
+- `references/theme-architecture.md`: the "Theme Check rules that touch structure" table listed four legacy Ruby-gem names (`SchemaJsonFormat`, `TemplateLength`, `NestedSnippet`, `DefaultLocale`) and `MissingSnippet`, which is not a check in either generation. Replaced with the current rules and their severities, plus the real per-directory file-size limits `MaxFileSize` enforces.
+- `SKILL.md`, `references/i18n-markets.md`: the two remaining legacy check names (`SchemaJsonFormat`, `DefaultLocale`) replaced with current ones.
+
+### Added
+
+- Validator check `I8`: a legacy Theme Check name may appear only on a line that frames it as legacy or deprecated, across every reference, asset and `SKILL.md`. It found seven stale mentions that the per-file review had missed.
+- Validator check `I9`: every `{% form '<type>' %}` in the skill must be one of the 15 published types.
+- `I4` now verifies the **severity** of every documented Theme Check rule, not only the name, against all 78 published checks.
+- Per-directory file-size limits table (`assets` 20 MB, `locales` 1.5 MB, `config/settings_schema.json` 512 KB, `templates/*.json` 512 KB, `sections/*.json` 512 KB, the 256 KB directories) and the note that `{% schema %}` bytes do not count toward non-asset limits.
+
+### Notes
+
+- Total: **52 checks**, `markdownlint` clean on 18 files, **67/67** cited URLs reachable.
+- The behavioural evidence is unchanged: still no post-skill run, because every delegated attempt failed with the provider quota error before answering. Recorded in `docs/tdd-round-1.md`.
+
 ## [0.1.1] - 2026-11-22
 
 ### Fixed

@@ -4,8 +4,8 @@ description: Use when building, changing, or reviewing a Shopify storefront or t
 license: MIT
 metadata:
   author: Salvatore Cuccaro
-  version: "0.1.1"
-  verified-on: "2026-11-20"
+  version: "0.1.2"
+  verified-on: "2026-11-24"
 ---
 
 # Shopify storefront engineering
@@ -108,7 +108,7 @@ Full object, tag and filter reference: `references/liquid-patterns.md`.
 
 ## Section and block rules
 
-- `{% schema %}` must be the last block in the file and contain valid JSON. Broken JSON fails silently in the editor and loudly in Theme Check (`ValidSchema`, `SchemaJsonFormat`).
+- `{% schema %}` must be the last block in the file and contain valid JSON. Broken JSON fails silently in the editor and loudly in Theme Check (`ValidSchema`, `JSONSyntaxError`).
 - Declare `name`, and add `presets` for every section a merchant can add. Without a preset the section is invisible in the editor.
 - Give every section a stable `class` and scope its CSS to it. Global selectors leak between sections.
 - Blocks need `{{ block.shopify_attributes }}` on their wrapper element; without it the editor cannot select or drag them.

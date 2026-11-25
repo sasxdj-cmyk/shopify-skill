@@ -1,6 +1,6 @@
-# TDD evidence — round 1
+# TDD evidence
 
-Date: 2026-11-21/22. Skill version under test: `0.1.1`.
+Date: 2026-11-21/25. Skill version under test: `0.1.2`.
 
 Two kinds of test were run: the **executable** test suite for the package itself, and the **behavioural** scenarios that measure whether an agent produces better Shopify work with the skill than without it.
 
@@ -22,10 +22,14 @@ Two kinds of test were run: the **executable** test suite for the package itself
 | Added `I5` (schema keys and setting types) | 47/48, failing on purpose | RED: a probe `bogus_type` was rejected |
 | Added `I6` (Web Pixel events) and `I7` (security severities) | 48/50, failing on purpose | RED: a probe severity `critical` was rejected with `EOL_API_VERSION: critical != low` |
 | Probes removed | 50/50 passed | GREEN |
+| `I4` extended to compare **severities** too | 49/50, failing on purpose | RED: a probe flipped `CdnPreconnect` to Error and the check answered `CdnPreconnect: documented error != warning` |
+| Added `I8` (legacy Theme Check names anywhere) | 50/52, failing on purpose | RED: it found seven real stale mentions in `SKILL.md`, `theme-architecture.md` and `i18n-markets.md` that the manual review had missed, plus one probe |
+| Added `I9` (`{% form %}` types) | 51/52, failing on purpose | RED: a probe `{% form 'newsletter' %}` was rejected; it also caught the placeholder `{% form 'type' %}` in the tag table |
+| Probes and stale names removed | 52/52 passed | GREEN |
 
-Final: **50/50**, plus `npx markdownlint-cli2 "**/*.md"` → 0 issues on 18 files, and `node scripts/check-links.mjs` → **58/58** cited URLs reachable.
+Final: **52/52**, plus `npx markdownlint-cli2 "**/*.md"` → 0 issues on 18 files, and `node scripts/check-links.mjs` → **67/67** cited URLs reachable.
 
-The `I*` checks are the anti-hallucination layer: they pin the checkout targets, Theme Check names, section schema keys, setting types, Web Pixel events and the 36 security severities to the values published by Shopify, so a future edit that invents one fails the build.
+The `I*` checks are the anti-hallucination layer: they pin the checkout targets, the 78 Theme Check checks with severities, the section schema keys, the setting types, the form types, the Web Pixel events and the 36 security severities to the values published by Shopify, so a future edit that invents one fails the build. `I8` is the one that earned its place immediately: it found stale names in files a human had already read.
 
 ## 2. Discovery
 
@@ -43,7 +47,7 @@ Five scenarios were dispatched to fresh general-purpose agents with no access to
 | 4 | Multilingual, multi-currency theme with Markets | Not captured: provider quota exhausted |
 | 5 | Checkout customization | Not captured: provider quota exhausted |
 
-Two post-skill runs (scenarios 1 and 2) were then dispatched with the skill installed. **Both failed with the same provider quota error before producing an answer**, so no GREEN behavioural score exists yet.
+Two post-skill runs (scenarios 1 and 2) were then dispatched with the skill installed. **Both failed with the same provider quota error before producing an answer**, so no GREEN behavioural score exists yet. A third attempt at scenario 2 on 2026-11-24 failed the same way (`Free usage limit reached`), so the behavioural half of this document is still a baseline, not a proof of improvement.
 
 ### Scenario 3 baseline, scored with `assets/rubric.md`
 
@@ -61,6 +65,8 @@ Two post-skill runs (scenarios 1 and 2) were then dispatched with the skill inst
 The baseline is genuinely strong on security review, which is the scenario most represented in public training data. The skill's value is therefore concentrated where models are weakest and where this baseline was not tested: section architecture that survives the theme editor, cart error and focus handling, Markets, and checkout extensibility. Those four scenarios remain unmeasured.
 
 The review of the references for this release found six factual defects that no model had flagged — three invented checkout targets, cost-based throttling attributed to Storefront API buyer traffic, a wrong `paginate` ceiling, legacy Theme Check names, an imprecise `hreflang` claim and an incomplete setting-type table. That is indirect evidence for the skill's premise: the failure mode is confident, plausible, wrong detail, and it needs a pinned source plus an executable check to catch it.
+
+A second review pass, on 2026-11-24, found eight more in areas the first pass had only skimmed: four invented or stale form types, two non-existent Liquid filters, a storefront form written with the wrong delimiters, a `--force` flag described as the opposite of what it does, a `paginate` window that repeated the Liquid limit as the lint limit, four legacy check names inside another reference, and `MaxFileSize` described without the limits it actually enforces. Seven of the eight were caught by `I8`, which exists because writing the check was cheaper than re-reading every file. That is the argument for the whole `I*` layer: an agent's memory of a documented API is a guess with good manners.
 
 ## 4. What remains unverified
 

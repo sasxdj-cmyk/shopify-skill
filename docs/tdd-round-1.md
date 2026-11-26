@@ -1,6 +1,6 @@
 # TDD evidence
 
-Date: 2026-11-21/25. Skill version under test: `0.1.2`.
+Date: 2026-11-21/26. Skill version under test: `0.1.3`.
 
 Two kinds of test were run: the **executable** test suite for the package itself, and the **behavioural** scenarios that measure whether an agent produces better Shopify work with the skill than without it.
 
@@ -26,10 +26,14 @@ Two kinds of test were run: the **executable** test suite for the package itself
 | Added `I8` (legacy Theme Check names anywhere) | 50/52, failing on purpose | RED: it found seven real stale mentions in `SKILL.md`, `theme-architecture.md` and `i18n-markets.md` that the manual review had missed, plus one probe |
 | Added `I9` (`{% form %}` types) | 51/52, failing on purpose | RED: a probe `{% form 'newsletter' %}` was rejected; it also caught the placeholder `{% form 'type' %}` in the tag table |
 | Probes and stale names removed | 52/52 passed | GREEN |
+| Added `I10`–`I13` (Function targets, localization inputs, `paginate` sizes, platform wrapper id) | 55/56, failing on purpose | RED: `I10` answered `cart.transform.run is never documented` (the regex was too strict and skipped two-segment targets), `I11` rejected a probe form using `name="language"`, `I12` rejected `paginate by 300`, `I13` rejected a probe `id="shopify-section-{{ section.id }}"` |
+| Fixed the `I10` regex and the assets | 56/56 passed | GREEN |
 
-Final: **52/52**, plus `npx markdownlint-cli2 "**/*.md"` → 0 issues on 18 files, and `node scripts/check-links.mjs` → **67/67** cited URLs reachable.
+Final: **56/56**, plus `npx markdownlint-cli2 "**/*.md"` → 0 issues, and `node scripts/check-links.mjs` → **79/79** cited URLs reachable.
 
-The `I*` checks are the anti-hallucination layer: they pin the checkout targets, the 78 Theme Check checks with severities, the section schema keys, the setting types, the form types, the Web Pixel events and the 36 security severities to the values published by Shopify, so a future edit that invents one fails the build. `I8` is the one that earned its place immediately: it found stale names in files a human had already read.
+`node scripts/coverage.mjs` adds a second executable layer: each line of `assets/rubric.md` is expressed as probes over the skill's own text, and the script reports **47/47 covered**. Proven RED the same way — replacing `presets` with `presetx` in a copy of the package dropped it to `46/47` with `1. Product-page section with schema, blocks and presets` named as the lost check. It is **coverage, not a behavioural score**, and its own output says so.
+
+The `I*` checks are the anti-hallucination layer: they pin the checkout targets, the 8 Function run targets, the 78 Theme Check checks with severities, the section schema keys, the setting types, the form types, the localization input names, the Web Pixel events and the 36 security severities to the values published by Shopify, so a future edit that invents one fails the build. `I8` is the one that earned its place immediately: it found stale names in files a human had already read.
 
 ## 2. Discovery
 
@@ -68,9 +72,11 @@ The review of the references for this release found six factual defects that no 
 
 A second review pass, on 2026-11-24, found eight more in areas the first pass had only skimmed: four invented or stale form types, two non-existent Liquid filters, a storefront form written with the wrong delimiters, a `--force` flag described as the opposite of what it does, a `paginate` window that repeated the Liquid limit as the lint limit, four legacy check names inside another reference, and `MaxFileSize` described without the limits it actually enforces. Seven of the eight were caught by `I8`, which exists because writing the check was cheaper than re-reading every file. That is the argument for the whole `I*` layer: an agent's memory of a documented API is a guess with good manners.
 
+A third pass, on 2026-11-25/26, found nine more, and this time none of them were typos: Function run targets from a retired API generation, three discount APIs that have been merged into two, an `EOL_API_VERSION` grace window that does not exist, `npx skills add` described as installing globally when it defaults to the project, a localization form whose input names did not match the contract, a newsletter written as a `contact` form, a `money` filter piped onto the wrong value, legacy customer templates described as required, and an asset that hardcoded the platform's own `shopify-section-` wrapper id. The last one would only break at the moment a Section Rendering API response replaced the section, which is exactly the kind of defect that survives a happy-path test. Two of the nine are now executable (`I11`, `I13`), and the rest are pinned by `I10` and `I12` or by the coverage probes.
+
 ## 4. What remains unverified
 
-- **Behavioural GREEN**: no post-skill run has produced an answer yet (provider quota). The threshold in `assets/rubric.md` is 90% with no zero in Safety and no zero in Evidence.
+- **Behavioural GREEN**: no post-skill run has produced an answer yet (provider quota). The threshold in `assets/rubric.md` is 90% with no zero in Safety and no zero in Evidence. `scripts/coverage.mjs` closes the checkable half of this gap — it proves the material each rubric line grades is present and pinned — but it cannot prove an agent used it, and it does not claim to.
 - **Real theme execution**: `assets/section-template.liquid` and `assets/featured-product-card.liquid` were checked for tag balance, schema validity and documented install paths, not rendered in a real Shopify theme.
 - **Claude Code, Codex, Qwen Code and Hermes Agent**: installation paths and manifest formats are documented from their official docs, but the skill was only loaded end to end in OpenCode.
 

@@ -70,35 +70,50 @@ Theme implications:
 ## Selectors
 
 ```liquid
-{%- form 'localization', id: 'localization-form' -%}
-  <label for="LanguageSelector">{{ 'general.language' | t }}</label>
-  <select id="LanguageSelector" name="language">
-    {%- for language in localization.available_languages -%}
-      <option
-        value="{{ language.iso_code }}"
-        {% if language.iso_code == localization.language.iso_code %}selected{% endif %}
-      >
-        {{ language.endonym_name | capitalize }}
-      </option>
-    {%- endfor -%}
-  </select>
+{%- if localization.available_languages.size > 1 -%}
+  {%- form 'localization', id: 'LocalizationForm-language' -%}
+    <label for="LanguageSelector">{{ 'general.language' | t }}</label>
+    <select id="LanguageSelector" name="language_code">
+      {%- for language in localization.available_languages -%}
+        <option
+          value="{{ language.iso_code }}"
+          lang="{{ language.iso_code }}"
+          {% if language.iso_code == localization.language.iso_code %}selected{% endif %}
+        >
+          {{ language.endonym_name | capitalize }}
+        </option>
+      {%- endfor -%}
+    </select>
+    <button type="submit">{{ 'general.update' | t }}</button>
+  {%- endform -%}
+{%- endif -%}
 
-  <label for="CountrySelector">{{ 'general.country' | t }}</label>
-  <select id="CountrySelector" name="country">
-    {{ country_option_tags }}
-  </select>
-
-  <button type="submit">{{ 'general.update' | t }}</button>
-{%- endform -%}
+{%- if localization.available_countries.size > 1 -%}
+  {%- form 'localization', id: 'LocalizationForm-country' -%}
+    <label for="CountrySelector">{{ 'general.country' | t }}</label>
+    <select id="CountrySelector" name="country_code">
+      {%- for country in localization.available_countries -%}
+        <option
+          value="{{ country.iso_code }}"
+          {% if country.iso_code == localization.country.iso_code %}selected{% endif %}
+        >
+          {{ country.name }} ({{ country.currency.iso_code }} {{ country.currency.symbol }})
+        </option>
+      {%- endfor -%}
+    </select>
+    <button type="submit">{{ 'general.update' | t }}</button>
+  {%- endform -%}
+{%- endif -%}
 ```
 
 Rules:
 
+- The form input names are part of the contract: `language_code` and `country_code`, with the ISO code as the value. A selector with `name="language"` or `name="country"` submits nothing the localization form understands.
+- Use one localization form per selector, as Shopify's own examples do; guard each with the `size > 1` check so a single-language, single-country store renders nothing.
 - Use the `localization` form. It preserves the current path and sets the market context; a hand-built redirect loses the page.
 - Submit on change only with a visible fallback button for no-JS and for keyboard users.
 - Show language names in their own language with `language.endonym_name` (a `shop_locale` property); `language.name` is the name in the store's primary locale, which is not what a buyer browsing in Italian wants to read.
-- `country_option_tags` renders the country options with the store's localized names. Do not hand-build a country list, and do not assume a country implies a currency: `country.currency` is authoritative.
-- Do not offer a currency the market does not support. Derive the list from `localization.available_countries`.
+- Build the country list from `localization.available_countries`. Each country carries its own `currency` object (`iso_code`, `symbol`), so do not assume a country implies the store's base currency. `country_option_tags` renders the shipping-zone countries by name, not the market's ISO country codes, so it does not satisfy the `country_code` contract.
 - After switching, verify that the product URL keeps its prefix and that the cart keeps its items and currency.
 
 ## URLs and SEO
@@ -114,7 +129,7 @@ Rules:
 
 ## Money and formatting
 
-- `money` formats using the cart currency. `money_with_currency` appends the ISO code.
+- `money` formats with the store's **HTML without currency** setting; `money_with_currency` uses the **HTML with currency** setting and appends the ISO code. The price you pass is already in the presentment currency of the active market, so format it, never re-convert it.
 - Prices are integers in the smallest unit; never divide by 100 manually.
 - Do not hardcode `€`, `$` or a thousands separator. Use the money filters and `t` for surrounding text.
 - Percentage and date formatting follow the locale; `date` accepts a format string, but prefer the storefront's localized formats where available.
@@ -139,3 +154,8 @@ Rules:
 - https://shopify.dev/docs/storefronts/themes/markets/multiple-currencies-languages — currencies and languages (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/architecture/locales — locale files (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/architecture/locales/storefront-locale-files — locale file format (verified on 2026-11-20)
+- https://shopify.dev/docs/api/liquid/tags/form#form-localization — the localization form contract: `language_code` and `country_code` inputs (verified on 2026-11-25)
+- https://shopify.dev/docs/api/liquid/objects/localization — `available_countries`, `available_languages`, `country`, `language` (verified on 2026-11-25)
+- https://shopify.dev/docs/api/liquid/objects/shop_locale — `endonym_name` versus `name`, `dir`, `root_url` (verified on 2026-11-25)
+- https://shopify.dev/docs/api/liquid/objects/country_option_tags — shipping-zone country names, not market ISO codes (verified on 2026-11-25)
+- https://shopify.dev/docs/api/liquid/filters/money — the two currency-format settings (verified on 2026-11-25)

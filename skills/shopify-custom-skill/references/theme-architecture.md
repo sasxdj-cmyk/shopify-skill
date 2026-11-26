@@ -35,7 +35,7 @@ theme/
     ├── search.json
     ├── 404.json
     ├── password.json
-    └── customers/
+    └── customers/        # LEGACY: deprecated, not required for customer accounts
         ├── account.liquid
         ├── activate_account.liquid
         ├── addresses.liquid
@@ -47,7 +47,8 @@ theme/
 
 Rules that are enforced by the platform:
 
-- `templates/customers/*` must be **Liquid**, not JSON. Customer pages are not section-based.
+- `templates/customers/*` are **legacy** templates. Customer accounts now run independently of the theme, and a theme published without them automatically upgrades merchants to the new experience. Do not build new work on them; add the `<shopify-account>` component to the header instead.
+- Five template types **must** be Liquid and have no JSON form: `gift_card`, `robots.txt`, `agents.md`, `llms.txt` and `llms-full.txt`. The last three are the agent-facing files served at `/agents.md`, `/llms.txt` and `/llms-full.txt`. Every other template type accepts JSON or Liquid.
 - `templates/password.json` and `layout/password.liquid` belong to the password page; do not reuse the main layout for it.
 - Asset filenames are referenced through `asset_url`, never by absolute path. `assets/` is a flat namespace (no subdirectories), so keep filenames unique and prefix them by feature: `component-product-card.css`.
 - `snippets/` is flat as well. A snippet is included by name without extension: `{% render 'product-card' %}`.
@@ -68,7 +69,10 @@ Rules that are enforced by the platform:
 | `search` | search results | search form, results grid |
 | `404` | unknown URL | message, links |
 | `password` | storefront lock | password form |
-| `customers/*` | account area | Liquid only |
+| `metaobject` | metaobject entry pages (the definition needs the web page capability) | metaobject fields |
+| `customers/*` | legacy account area | deprecated; customer accounts now run outside the theme |
+
+A JSON template renders at most **25 sections**, and each section at most **50 blocks**. Both limits are enforced by the platform.
 
 Template suffixes create alternatives: `product.sale.json` is reachable from the admin as a template named `sale`, and a product can be assigned to it. Use suffixes for real alternatives (bundle, preorder), not as a workaround for a section that should be configurable.
 
@@ -100,7 +104,7 @@ A JSON template declares which sections render and in which order:
 Optional keys:
 
 - `layout` — the layout file to use, without extension (`"theme"` is the default).
-- `wrapper` — the HTML tag that wraps the whole template output, for example `"div"` or `"main"`. Default is no wrapper.
+- `wrapper` — an HTML wrapper around all the template's sections. The only accepted tags are `div`, `main` and `section`, optionally with an id, classes and attributes (`"div#id.class[attr=value]"`). Omitted means no extra wrapper.
 
 Rules:
 
@@ -291,13 +295,13 @@ File-size limits that `MaxFileSize` enforces, as published:
 | `sections/*.json` | 512 KB |
 | `blocks`, `config`, `layout`, `snippets`, `templates`, `sections` | 256 KB |
 
-Theme Check does not count bytes inside `{% schema %}` toward the non-asset limits, and skips `_drafts`. A 300 KB snippet that is 90% schema still fails, so move merchant copy into settings instead of inlining it.
+Theme Check does not count bytes inside `{% schema %}` toward the non-asset limits, and skips `_drafts`. The exclusion is only the schema block, not the whole file: a 300 KB section whose schema is 10 KB still has 290 KB counted and fails. Move merchant copy into settings instead of inlining it.
 
 ## Sources
 
 - https://shopify.dev/docs/storefronts/themes/architecture — directory contract, templates, layouts (verified on 2026-11-20)
-- https://shopify.dev/docs/storefronts/themes/architecture/templates — template types and suffixes (verified on 2026-11-20)
-- https://shopify.dev/docs/storefronts/themes/architecture/templates/json-templates — `sections`, `order`, `layout`, `wrapper` (verified on 2026-11-20)
+- https://shopify.dev/docs/storefronts/themes/architecture/templates — template types, legacy customer templates, the five Liquid-only types (verified on 2026-11-25)
+- https://shopify.dev/docs/storefronts/themes/architecture/templates/json-templates — `sections`, `order`, `layout`, `wrapper`, 25 sections × 50 blocks (verified on 2026-11-25)
 - https://shopify.dev/docs/storefronts/themes/architecture/sections/section-schema — schema keys, setting types, `enabled_on`, `locales` (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/architecture/blocks — blocks and `shopify_attributes` (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/architecture/locales — locale files (verified on 2026-11-20)

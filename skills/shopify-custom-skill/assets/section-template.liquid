@@ -31,8 +31,8 @@
 -%}
 
 <section
-  id="shopify-section-{{ section.id }}"
   class="featured-collection featured-collection--{{ section.id }}"
+  data-section-id="{{ section.id }}"
   aria-labelledby="featured-collection-heading-{{ section.id }}"
 >
   <div class="featured-collection__inner">
@@ -63,7 +63,7 @@
           {%- assign product = block.settings.product -%}
           {%- if product -%}
             <li class="featured-collection__item" {{ block.shopify_attributes }}>
-              {%- render 'featured-product-card', product: product, section_id: section.id -%}
+              {%- render 'featured-product-card', product: product -%}
             </li>
           {%- endif -%}
         {%- endfor -%}
@@ -84,7 +84,7 @@
 
             {%- assign shown = shown | plus: 1 -%}
             <li class="featured-collection__item">
-              {%- render 'featured-product-card', product: product, section_id: section.id -%}
+              {%- render 'featured-product-card', product: product -%}
             </li>
           {%- endfor -%}
         {%- endif -%}
@@ -159,9 +159,9 @@
     const controller = new AbortController();
     window.addEventListener('pagehide', () => controller.abort(), { once: true });
 
-    const successMessage = '{{ 'sections.section-template.added_to_cart' | t }}';
-    const errorMessage = '{{ 'sections.section-template.add_to_cart_error' | t }}';
-    const networkMessage = '{{ 'sections.section-template.network_error' | t }}';
+    const successMessage = {{ 'sections.section-template.added_to_cart' | t | json }};
+    const errorMessage = {{ 'sections.section-template.add_to_cart_error' | t | json }};
+    const networkMessage = {{ 'sections.section-template.network_error' | t | json }};
 
     document.addEventListener('submit', async (event) => {
       const form = event.target.closest('[data-quick-add]');
@@ -171,7 +171,7 @@
       const root = form.closest('.featured-collection');
       if (!root || form.dataset.pending === 'true') return;
 
-      const sectionId = root.id.replace('shopify-section-', '');
+      const sectionId = root.dataset.sectionId;
       const button = form.querySelector('button[type="submit"]');
 
       form.dataset.pending = 'true';
@@ -202,12 +202,14 @@
         const markup = payload.sections && payload.sections[sectionId];
         if (!markup) return;
 
-        const replacement = new DOMParser()
-          .parseFromString(markup, 'text/html')
-          .getElementById(`shopify-section-${sectionId}`);
+        // The response contains the platform wrapper, so replace the wrapper,
+        // not the inner section, or the ids nest and duplicate.
+        const parsed = new DOMParser().parseFromString(markup, 'text/html');
+        const replacement = parsed.getElementById(`shopify-section-${sectionId}`);
         if (!replacement) return;
 
-        root.replaceWith(replacement);
+        const target = root.closest(`#shopify-section-${sectionId}`) || root;
+        target.replaceWith(replacement);
 
         // The live region was replaced with the markup: re-announce on the new node.
         const newStatus = replacement.querySelector('[data-cart-status]');
@@ -327,7 +329,7 @@
       "heading": "Prodotti in evidenza",
       "view_all": "Vedi tutta la collezione",
       "added_to_cart": "Aggiunto al carrello",
-      "add_to_cart_error": "Non disponibile in questa quantita'",
+      "add_to_cart_error": "Non disponibile in questa quantità",
       "network_error": "Connessione assente. Riprova."
     }
   }

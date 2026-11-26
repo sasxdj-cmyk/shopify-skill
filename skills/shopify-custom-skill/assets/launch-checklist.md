@@ -5,7 +5,7 @@ Tick every line or record why it does not apply. "It looks fine" is not a tick.
 ## Content and templates
 
 - [ ] Home, product, collection, page, blog, article, cart, search, 404 and password pages render.
-- [ ] Every product with no image, no description, no variant and one variant renders correctly.
+- [ ] Every product with no image, no description, a single default variant and multiple variants renders correctly.
 - [ ] Every collection with zero products renders an empty state, not a broken grid.
 - [ ] Every section that declares `enabled_on` renders in each declared template.
 - [ ] No lorem ipsum, no placeholder images, no "test" products in navigation.
@@ -37,10 +37,10 @@ Tick every line or record why it does not apply. "It looks fine" is not a tick.
 
 ## Accounts
 
-- [ ] Register, login, logout, password reset.
-- [ ] Order history and order detail render for a real order.
-- [ ] Address book: add, edit, delete, set default.
-- [ ] Account pages translated.
+- [ ] The header exposes a working account entry point (`<shopify-account>` or a link to the account pages).
+- [ ] Sign-in, sign-out and order history work in the store's customer accounts experience.
+- [ ] Address editing works where the theme still ships legacy account templates.
+- [ ] Account-related pages and emails use the store's published languages.
 
 ## Markets and localization
 

@@ -3,8 +3,7 @@
   Place this file in snippets/featured-product-card.liquid
 
   Accepts:
-    product     - product object (required)
-    section_id  - section id, used only for debugging (optional)
+    product - product object (required)
 
   Escaping: every text sink uses escape, the image goes through image_url/image_tag,
   the variant id is an integer and is printed unquoted only inside a data attribute
@@ -45,7 +44,7 @@
   </p>
 
   {%- if variant -%}
-    <form data-quick-add data-variant-id="{{ variant.id }}">
+    {%- form 'product', product, data-quick-add: '', data-variant-id: variant.id -%}
       <input type="hidden" name="id" value="{{ variant.id }}">
       <button
         type="submit"
@@ -58,6 +57,6 @@
           {{ 'products.product.sold_out' | t }}
         {%- endif -%}
       </button>
-    </form>
+    {%- endform -%}
   {%- endif -%}
 </article>

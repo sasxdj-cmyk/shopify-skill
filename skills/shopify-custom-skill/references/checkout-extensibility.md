@@ -109,14 +109,22 @@ Never simulate a fee with a cart attribute only. An attribute is a note, not mon
 
 A Function is server-side logic compiled to WASM and run by Shopify at a defined point. It reads an input query, returns operations, and cannot call the network.
 
-| Function | Runs on | Typical use |
-|----------|---------|-------------|
-| Cart transform | cart | Bundles, add-on lines, line price adjustments |
-| Delivery customization | cart delivery options | Hide, rename or reorder shipping methods |
-| Payment customization | payment methods | Hide, rename, reorder, sort payment methods |
-| Cart line discount | cart lines | Buy X get Y, tiered line discounts |
-| Cart order discount | order | Free shipping thresholds, order-level offers |
-| Product discount | product page | Automatic product discounts |
+Every function family and its run target, as published for API `2026-10`:
+
+| Function | Run target | Typical use |
+|----------|-----------|-------------|
+| Cart transform | `cart.transform.run` | Bundles, add-on lines, line price adjustments |
+| Discount (product **and** order) | `cart.lines.discounts.generate.run` | Buy X get Y, tiered line discounts, order-level offers |
+| Delivery option discount | `cart.delivery-options.discounts.generate.run` | Free or reduced shipping above a threshold |
+| Delivery customization | `cart.delivery-options.transform.run` | Hide, rename or reorder shipping methods |
+| Payment customization | `cart.payment-methods.transform.run` | Hide, rename, reorder, sort payment methods |
+| Cart and checkout validation | `cart.validations.generate.run` | Block an order that fails a rule (age, quantity, address) |
+| Fulfillment constraints | `cart.fulfillment-constraints.generate.run` | Split or merge fulfillment groups by product rules |
+| Order routing location rule | `cart.fulfillment-groups.location-rankings.generate.run` | Rank locations for order routing |
+
+There are **no separate product-discount, order-discount or shipping-discount Function APIs** anymore. All three were merged into the Discount Function API: product and order discounts both run at `cart.lines.discounts.generate.run` and return `CartLinesDiscountsGenerateRunResult` (product discounts target cart lines, order discounts target `orderSubtotal`), while shipping discounts run at `cart.delivery-options.discounts.generate.run` and return `CartDeliveryOptionsDiscountsGenerateRunResult`. The old result shape `FunctionRunResult` is deprecated. A table that documents three separate discount APIs as current is describing a migration that already happened.
+
+The legacy run targets `purchase.delivery-customization.run` and `purchase.payment-customization.run` still appear in code comments inside Shopify's own API docs. They are not the values to put in `shopify.extension.toml`.
 
 ```toml
 # shopify.extension.toml
@@ -185,10 +193,13 @@ Same shape as delivery: read the payment methods available for the cart, return 
 
 ## Discounts
 
-- Cart line discount functions return discount operations per line with a fixed amount or percentage.
-- Order discount functions return order-level discounts, including free shipping.
+One Function, two targets, three candidate kinds:
+
+- `cart.lines.discounts.generate.run` returns `CartLinesDiscountsGenerateRunResult` with `productDiscountsAdd` (targets cart lines) and `orderDiscountsAdd` (targets `orderSubtotal`). Both carry a selection strategy: `FIRST`, `MAXIMUM`, or `ALL` — `ALL` is valid for product discounts only.
+- `cart.delivery-options.discounts.generate.run` returns `CartDeliveryOptionsDiscountsGenerateRunResult` with `deliveryDiscountsAdd` (shipping discounts, including free shipping).
+- A result may contain at most one of each operation (`productDiscountsAdd`, `orderDiscountsAdd`, `deliveryDiscountsAdd`, `enteredDiscountCodesAccept`). Check `enteredDiscountCodes.rejectable` before rejecting a code: rejecting a non-rejectable code makes the whole result invalid.
 - Discount functions do not stack arbitrarily: the merchant's discount combinations decide what can combine. Test with combinations enabled and disabled.
-- The discount must be explainable to the buyer: the checkout shows the discount title from your function, so write a human title, not an internal code.
+- The discount must be explainable to the buyer: the checkout shows the message you return on the candidate, so write a human message, not an internal code.
 
 ## Testing and rollout
 
@@ -212,3 +223,6 @@ shopify app deploy         # creates an app version with the extensions
 - https://shopify.dev/docs/apps/build/functions/input-output — input queries and operations (verified on 2026-11-20)
 - https://shopify.dev/docs/api/functions/latest/cart-transform — cart transform API (verified on 2026-11-20)
 - https://shopify.dev/docs/api/functions/latest/delivery-customization — delivery customization API (verified on 2026-11-20)
+- https://shopify.dev/docs/api/functions/latest/discount — merged Discount Function API, product/order/shipping migration (verified on 2026-11-25)
+- https://shopify.dev/docs/api/functions/latest/payment-customization — payment customization API (verified on 2026-11-25)
+- https://shopify.dev/docs/api/functions/latest/cart-and-checkout-validation — cart and checkout validation API (verified on 2026-11-25)

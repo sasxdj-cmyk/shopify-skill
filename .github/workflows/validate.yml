@@ -24,6 +24,9 @@ jobs:
       - name: Validate skill package
         run: node scripts/validate.mjs
 
+      - name: Check rubric coverage
+        run: node scripts/coverage.mjs
+
       - name: Markdown lint
         uses: DavidAnson/markdownlint-cli2-action@v17
         with:

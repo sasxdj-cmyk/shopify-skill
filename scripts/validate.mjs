@@ -173,7 +173,7 @@ const SECURITY_CHECKS = [
   'UNSCOPED_SHOP_CONFIG_WRITE',
   'WEAK_SHOP_VALIDATION',
 ];
-const VERSION = '0.1.2';
+const VERSION = '0.1.3';
 // Severity published in Shopify/cli at
 // packages/app/src/cli/services/app-security-engine/checks/<ID>.md on 2026-11-20.
 // A drift here means the checklist teaches the wrong priority.
@@ -1022,6 +1022,138 @@ check('I9 form types are real form types', () => {
   assert(used > 0, 'no form tag found in the skill');
   assert(problems.length === 0, problems.join('; '));
   return `${used} form tags use one of ${FORM_TYPES.length} published types`;
+});
+
+/* ------------------------------------------------------------------ */
+/* J. Platform facts added in the second review round                  */
+/* ------------------------------------------------------------------ */
+// Run targets published at https://shopify.dev/docs/api/functions/latest/*
+// on 2026-11-25. The deprecated Product, Order and Shipping Discount APIs
+// are merged into the two discount targets, so a separate
+// cart.product-discounts.* or cart.order-discounts.* target does not exist.
+const FUNCTION_TARGETS = [
+  'cart.delivery-options.discounts.generate.run',
+  'cart.delivery-options.transform.run',
+  'cart.fulfillment-constraints.generate.run',
+  'cart.fulfillment-groups.location-rankings.generate.run',
+  'cart.lines.discounts.generate.run',
+  'cart.payment-methods.transform.run',
+  'cart.transform.run',
+  'cart.validations.generate.run',
+];
+// Still printed inside Shopify's own code samples and in our migration note.
+const FUNCTION_TARGETS_LEGACY = [
+  'purchase.delivery-customization.run',
+  'purchase.payment-customization.run',
+];
+
+check('I10 Function run targets are real', () => {
+  const published = new Set(FUNCTION_TARGETS);
+  const legacy = new Set(FUNCTION_TARGETS_LEGACY);
+  const seen = new Set();
+  const problems = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!/\.(md|liquid)$/.test(entry.name)) continue;
+      for (const line of read(full).split('\n')) {
+        for (const match of line.matchAll(/\b([a-z][a-z-]*(?:\.[a-z][a-z-]*)+\.run)\b/g)) {
+          const target = match[1];
+          if (published.has(target)) {
+            seen.add(target);
+            continue;
+          }
+          if (legacy.has(target) && /legacy|deprecated/i.test(line)) continue;
+          problems.push(`${entry.name}: ${target} is not a run target`);
+        }
+      }
+    }
+  };
+  walk(SKILL_DIR);
+  for (const target of FUNCTION_TARGETS) {
+    assert(seen.has(target), `${target} is never documented`);
+  }
+  assert(problems.length === 0, problems.join('; '));
+  return `${seen.size} of ${FUNCTION_TARGETS.length} published targets documented`;
+});
+
+check('I11 localization form uses the published input names', () => {
+  let forms = 0;
+  const problems = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!/\.(md|liquid)$/.test(entry.name)) continue;
+      const text = read(full);
+      for (const match of text.matchAll(/\{%-?\s*form\s+'localization'[\s\S]*?\{%-?\s*endform\s*-?%\}/g)) {
+        forms += 1;
+        const block = match[0];
+        if (!/name="(language_code|country_code)"/.test(block)) {
+          problems.push(`${entry.name}: localization form has no language_code or country_code input`);
+        }
+        if (/name="(language|country)"/.test(block)) {
+          problems.push(`${entry.name}: localization form uses name="language" or name="country"`);
+        }
+      }
+    }
+  };
+  walk(SKILL_DIR);
+  assert(forms > 0, 'no {% form "localization" %} block found');
+  assert(problems.length === 0, problems.join('; '));
+  return `${forms} localization form(s) with the published input names`;
+});
+
+check('I12 paginate page sizes stay within 1-250', () => {
+  let seen = 0;
+  const problems = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!/\.(md|liquid)$/.test(entry.name)) continue;
+      for (const line of read(full).split('\n')) {
+        for (const match of line.matchAll(/paginate\s+[\w.]+\s+by\s+(\d+)/g)) {
+          seen += 1;
+          const size = Number(match[1]);
+          if (size < 1 || size > 250) problems.push(`${entry.name}: paginate by ${size}`);
+        }
+        if (/maximum page size is 50/i.test(line)) {
+          problems.push(`${entry.name}: "maximum page size is 50" is false (platform ceiling is 250)`);
+        }
+      }
+    }
+  };
+  walk(SKILL_DIR);
+  assert(seen > 0, 'no paginate tag found');
+  assert(problems.length === 0, problems.join('; '));
+  return `${seen} paginate tag(s) within 1-250`;
+});
+
+check('I13 assets do not fake the platform section wrapper id', () => {
+  const dir = join(SKILL_DIR, 'assets');
+  const problems = [];
+  let scanned = 0;
+  for (const name of readdirSync(dir)) {
+    if (!name.endsWith('.liquid')) continue;
+    scanned += 1;
+    if (/id="shopify-section-\{\{/.test(read(join(dir, name)))) {
+      problems.push(`${name}: hardcodes id="shopify-section-..." on the inner element, duplicating the platform wrapper`);
+    }
+  }
+  assert(scanned > 0, 'no liquid asset found');
+  assert(problems.length === 0, problems.join('; '));
+  return `${scanned} liquid assets leave the wrapper to the platform`;
 });
 
 /* ------------------------------------------------------------------ */

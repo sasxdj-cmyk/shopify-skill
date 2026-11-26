@@ -26,11 +26,11 @@ shopify theme delete --store <store> --theme <id>
 Rules:
 
 - `theme pull` before any change, and pull into a git branch. Never edit the live theme in the admin.
-- `theme push --unpublished` **creates a new** unpublished theme and pushes to it. To update an existing unpublished theme, pass `--theme <id>`. In a non-interactive environment you must pass one of `--development`, `--live`, `--theme` or `--unpublished`, or the command stops to ask.
-- `theme push --publish` uploads and then publishes. Publishing the live theme from CI also needs `--allow-live`, otherwise the CLI refuses.
+- `theme push --unpublished` **creates a new** unpublished theme and pushes to it; pass `--theme <name>` to name that new theme. To update an existing theme, pass its `--theme <id>`. In a non-interactive environment you must pass one of `--development`, `--live`, `--theme` or `--unpublished`, or the command stops to ask.
+- `theme push --publish` uploads and then publishes. In a non-interactive environment, pushing to the live theme needs `--allow-live`, otherwise the CLI refuses.
 - Pushing **deletes remote files that do not exist locally**. That is the default behaviour, and it is how a partial checkout wipes sections. `--nodelete` prevents it; use it whenever the local copy is incomplete.
 - `--force` is a hidden escape hatch that only skips the "this does not look like a theme directory" confirmation. It is not a sync mode and it does not make a push safe.
-- `--strict` makes the push fail unless Theme Check reports zero errors (warnings allowed). Cheaper than finding out after the upload.
+- `--strict` makes the push fail unless Theme Check reports zero errors (warnings allowed). `--allow-custom-checks`, when the store uses custom checks, only applies together with `--strict`. Cheaper than finding out after the upload.
 - `--json` makes output machine-readable for CI and for the evidence you paste; `push` and `list` support it.
 - `theme dev` proxies the real store: logged-in state, apps and checkout behave like production. Use it for cart and account testing, not a static preview.
 - `theme check` runs locally and in CI. Fix errors, review warnings, and never suppress a rule globally to make the build green.

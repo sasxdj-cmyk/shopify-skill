@@ -168,7 +168,7 @@ Rules:
 {% endpaginate %}
 ```
 
-- The `paginate` tag accepts a page size between 1 and 250, and can reach at most the 25,000th item in an array. Theme Check's `PaginationSize` defaults to a 1–50 window (`max_size: 50`), so a page size above 50 fails the default check even though Liquid allows it.
+- The `paginate` tag accepts a page size between 1 and 250, and can reach at most the 25,000th item in an array. Theme Check's `PaginationSize` defaults to a 1–50 window (`max_size: 50`) and reports a **warning** above it, even though Liquid allows 250.
 - `paginate` limits the amount fetched, not only what is displayed: `collection.products` returns up to 50 products by default regardless of a `for` loop's `limit`. Use `paginate` with a `page_size` to control the fetch, and combine it with `limit` when you only render a few.
 - `paginate.pages`, `paginate.current_page`, `paginate.items`, `paginate.next`, `paginate.previous` are available inside the block.
 - Filtering and sorting must preserve pagination parameters; otherwise page 2 loses the filter.
@@ -188,7 +188,7 @@ Rules:
 ```
 
 - The `form` tag emits the CSRF token, `form_type`, `utf8` and the correct `action`. Hand-written forms are a defect.
-- The 15 available types, as published: `activate_customer_password`, `cart`, `contact`, `create_customer`, `currency`, `customer`, `customer_address`, `customer_login`, `guest_login`, `localization`, `new_comment`, `product`, `recover_customer_password`, `reset_customer_password`, `storefront_password`. Note the renames: account creation is `create_customer` (not `customer_register`), password reset has three separate types, and there is no `newsletter` type — a newsletter signup is a `contact` form with a tag.
+- The 15 available types, as published: `activate_customer_password`, `cart`, `contact`, `create_customer`, `currency`, `customer`, `customer_address`, `customer_login`, `guest_login`, `localization`, `new_comment`, `product`, `recover_customer_password`, `reset_customer_password`, `storefront_password`. Note the renames: account creation is `create_customer` (not `customer_register`), password reset has three separate types, and there is no `newsletter` type — a newsletter signup is a `customer` form whose email input is named `contact[email]`.
 - `form.errors` and `form.posted_successfully?` drive validation messages. Render them with `aria-live`.
 - Disable the submit button only for genuinely unavailable states, and re-enable it on error; a permanently disabled button is a lost sale.
 - For AJAX submit, intercept `submit`, post to the form's `action` with `FormData`, and keep the non-JS path working.
@@ -221,12 +221,15 @@ Rules:
 ```liquid
 {{ 'cart.general.title' | t }}
 {{ 'cart.item_count' | t: count: cart.item_count }}
-{{ 'products.price.from' | t: price: product.price | money }}
+{%- assign formatted_price = product.price | money -%}
+{{ 'products.price.from' | t: price: formatted_price }}
 ```
+
+A filter argument cannot itself be piped: in `'key' | t: price: product.price | money`, the `money` filter applies to the output of `t`, not to the argument. Format first into a variable, then pass it.
 
 - `t` reads `locales/<locale>.json`. Missing keys fall back to the default locale and are reported by `MatchingTranslations`.
 - `localization.language.iso_code` and `localization.country.iso_code` describe the buyer context.
-- `{% form 'localization' %}` with `language` and `country` selects switches the buyer context; it preserves the current path.
+- `{% form 'localization' %}` with `language_code` and `country_code` selects switches the buyer context; it preserves the current path.
 - Use `routes.root_url` instead of `'/'` so subfolder markets keep working.
 
 ## Performance
@@ -261,5 +264,7 @@ Rules:
 - https://shopify.dev/docs/storefronts/themes/best-practices/accessibility — accessibility guidance (verified on 2026-11-20)
 - https://shopify.dev/docs/storefronts/themes/architecture/locales/storefront-locale-files — locale file format (verified on 2026-11-20)
 - https://shopify.dev/docs/api/liquid/tags/form — the 15 form types (verified on 2026-11-24)
+- https://shopify.dev/docs/storefronts/themes/customer-engagement/email-consent — newsletter signup uses `{% form 'customer' %}` with `contact[email]` (verified on 2026-11-25)
+- https://shopify.dev/docs/api/liquid/filters/translate — the `translate` filter, of which `t` is the alias (verified on 2026-11-25)
 - https://shopify.dev/docs/api/liquid/tags/paginate — page size 1–250, the 25,000-item ceiling, the 50-item default fetch (verified on 2026-11-24)
 - https://shopify.dev/docs/api/liquid/filters/structured_data — `product` and `article` only (verified on 2026-11-24)

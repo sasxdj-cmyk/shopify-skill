@@ -58,7 +58,7 @@ mkdir -p ~/.config/opencode/skills
 cp -r skills/shopify-custom-skill ~/.config/opencode/skills/
 ```
 
-Discovery paths: `~/.config/opencode/skills/`, `.opencode/skills/`, and the compatibility directories `~/.claude/skills/` and `~/.agents/skills/`. The skill id comes from the directory name, while the frontmatter `name` is the display label (the official example uses `name: Git Release` inside `git-release/`). Skills are exposed through the `skill` tool and can be referenced as `@<skill-id>` in a prompt.
+Discovery paths: `~/.config/opencode/skills/`, `.opencode/skills/`, and the compatibility directories `~/.claude/skills/` and `~/.agents/skills/`. The skill id comes from the directory name, while the frontmatter `name` is the display label (the official example uses `name: Git Release` inside `git-release/`). This package keeps the two identical, because stricter loaders reject a mismatch. Skills are exposed through the `skill` tool and can be referenced as `@<skill-id>` in a prompt.
 
 ### Qwen Code
 
@@ -81,10 +81,11 @@ Discovery: `~/.hermes/skills/`, `.hermes/skills/`, `.agents/skills/`, and instal
 ### skills.sh
 
 ```bash
-npx skills add <owner>/shopify-skill
+npx skills add sasxdj-cmyk/shopify-skill          # into the current project
+npx skills add sasxdj-cmyk/shopify-skill -g       # user-level, for every project
 ```
 
-Installs the skill for the agents it detects on the machine. The repository layout (`skills/<name>/SKILL.md`) is what the indexer expects.
+Requires Node.js 22.20 or later. It installs for the agents it detects, and the repository layout (`skills/<name>/SKILL.md`) is what it discovers. Without `-g` the skills land in the current project; with `-g` they go to the user directory.
 
 ## Invocation
 
@@ -135,3 +136,4 @@ The manifests carry the same name and version. They do not duplicate the skill b
 - https://hermes-agent.nousresearch.com/docs/user-guide/features/skills — Hermes Agent skills, `skill_view`, taps (verified on 2026-11-20)
 - https://hermes-agent.nousresearch.com/docs/developer-guide/plugins — Hermes plugin format (verified on 2026-11-20)
 - https://skills.sh — skills.sh install and badge (verified on 2026-11-20)
+- https://github.com/vercel-labs/skills — `npx skills add <owner>/<repo>`, `-g` for user-level installs, Node.js 22.20+ (verified on 2026-11-25)

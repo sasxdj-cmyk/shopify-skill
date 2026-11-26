@@ -2,6 +2,31 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-11-26
+
+### Fixed
+
+- `references/checkout-extensibility.md`: the Function run-target table listed targets that no longer exist. Rewritten against the published API `2026-10` set (8 targets: `cart.transform.run`, `cart.lines.discounts.generate.run`, `cart.delivery-options.discounts.generate.run`, `cart.delivery-options.transform.run`, `cart.payment-methods.transform.run`, `cart.validations.generate.run`, `cart.fulfillment-constraints.generate.run`, `cart.fulfillment-groups.location-rankings.generate.run`).
+- `references/checkout-extensibility.md`: the discount chain described the retired Product, Order and Shipping Discount APIs. They are merged into the Discount Function API: `cart.lines.discounts.generate.run` returns `CartLinesDiscountsGenerateRunResult` with `productDiscountsAdd`/`orderDiscountsAdd`, `cart.delivery-options.discounts.generate.run` returns `CartDeliveryOptionsDiscountsGenerateRunResult` with `deliveryDiscountsAdd`; strategies are `FIRST`, `MAXIMUM` and `ALL` (`ALL` only for product), at most one operation per type, and entered codes are checked through `enteredDiscountCodes.rejectable`. `FunctionRunResult` is deprecated.
+- `references/security-checklist.md`: `EOL_API_VERSION` no longer claims a 30-day grace window. Shopify supports each API version for at least 12 months and keeps it reachable until the 16th of the month after its anniversary; a silent fall-forward is detected through the `X-Shopify-API-Version` response header.
+- `references/compatibility.md`: `npx skills add` installs into the **current project** by default and `-g` is what makes it user-level; Node.js must be 22.20 or newer; the skill folder name must equal the frontmatter `name` (a display label is tolerated by OpenCode but not by stricter loaders).
+- `references/i18n-markets.md`: the selector example now matches the real `{% form 'localization' %}` contract — one form per selector, `name="language_code"` and `name="country_code"` with ISO values, guards on `size > 1`, and no `country_option_tags` inside the form (it lists the shipping zones' countries, not the Markets). Added the `localization.available_countries` + `country.currency` rule and the two money-format settings.
+- `references/liquid-patterns.md`: the localization form line named the wrong inputs (`language`/`country`); it now names `language_code`/`country_code`. The newsletter example used a `contact` form; email consent is a `{% form 'customer' %}` with `<input type="email" name="contact[email]">`. The `t` example piped `money` onto the filter output instead of its argument; it now formats into a variable first. `PaginationSize` is described as a warning, not a failure.
+- `references/theme-architecture.md`: `templates/customers/*` are legacy and deprecated (customer accounts run outside the theme; use `<shopify-account>`), five template types have no JSON form (`gift_card`, `robots.txt`, `agents.md`, `llms.txt`, `llms-full.txt`), a JSON template renders at most 25 sections and each section at most 50 blocks, and `wrapper` accepts only `div`, `main` and `section` with optional id, classes and attributes.
+- `assets/section-template.liquid`: the section no longer hardcodes `id="shopify-section-{{ section.id }}"` on its inner element, which duplicated the platform wrapper and nested ids on Section Rendering API replacements. The script reads `data-section-id`, replaces the wrapper node, and re-announces on the new live region. Merchant strings inside the script go through `| json` instead of single quotes.
+- `assets/featured-product-card.liquid`: the quick-add is a real `{% form 'product', product %}` instead of a bare `<form>`, and the unused `section_id` parameter is gone.
+- `assets/launch-checklist.md`: the variant line now covers the real cases (no image, no description, single default variant, multiple variants) and the account section matches customer accounts instead of the legacy templates.
+
+### Added
+
+- Validator checks `I10` (every `*.run` string is one of the 8 published Function targets and all 8 are documented), `I11` (localization forms use `language_code`/`country_code`), `I12` (`paginate` sizes stay within 1–250) and `I13` (liquid assets do not fake the platform section wrapper id). Proven RED with deliberate probes before landing.
+- `scripts/coverage.mjs`: each line of `assets/rubric.md` expressed as probes over the skill's own text, 47/47 covered. It reports coverage, explicitly not a behavioural score, and exists because delegated behavioural runs were unavailable; it is wired into CI.
+
+### Notes
+
+- Total: **56 checks**, `markdownlint` clean, **79/79** cited URLs reachable.
+- Behavioural evidence is still missing, and is still not simulated. `docs/tdd-round-1.md` records why.
+
 ## [0.1.2] - 2026-11-25
 
 ### Fixed

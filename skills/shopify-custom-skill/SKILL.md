@@ -4,8 +4,8 @@ description: Use when building, changing, or reviewing a Shopify storefront or t
 license: MIT
 metadata:
   author: Salvatore Cuccaro
-  version: "0.1.2"
-  verified-on: "2026-11-24"
+  version: "0.1.3"
+  verified-on: "2026-11-26"
 ---
 
 # Shopify storefront engineering
@@ -94,7 +94,7 @@ Never place Liquid output in `on*` attributes, `srcdoc`, `javascript:` URLs, `st
 
 Above-the-fold hero images use `loading: 'eager'` and `fetchpriority: 'high'`. Decorative images use `alt: ''`; never omit `alt`.
 
-**Pagination.** `{% paginate collection.products by 24 %}` — the maximum page size is 50. Always render the pagination control and keep the URL parameters intact.
+**Pagination.** `{% paginate collection.products by 24 %}` — the page size accepts 1 to 250. (Theme Check's `PaginationSize` lint has its own narrower default window; that is a style default, not the platform limit.) Always render the pagination control and keep the URL parameters intact.
 
 **Do not touch `{{ content_for_header }}`.** It is required by Shopify and is a Theme Check error to modify it.
 

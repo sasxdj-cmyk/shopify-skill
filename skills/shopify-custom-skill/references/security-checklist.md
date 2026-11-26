@@ -100,7 +100,7 @@ VERIFY: set the metafield to "><img src=x onerror=alert(1)> and confirm it rende
 | Check | Severity | Detect | Fix | Verify |
 |-------|----------|--------|-----|--------|
 | DEPENDENCY_REACHABILITY | medium | A vulnerable package version present, with a call path that actually reaches the vulnerable behaviour | Upgrade, patch, or prove the path is unreachable and document it | Reproduce the vulnerable call, then confirm it no longer resolves |
-| EOL_API_VERSION | low | Pinned API version older than the 12-month support window (quarterly releases, 30-day grace) | Move to a supported version and retest queries | Call the API and confirm the version is accepted |
+| EOL_API_VERSION | low | Pinned API version outside the support window (quarterly releases; each stable version is supported for a minimum of 12 months and stays accessible until the 16th of the month after that anniversary) | Move to a supported version and retest queries | Call the API and confirm `X-Shopify-API-Version` echoes the version you asked for, not a fall-forward |
 
 ## Quick greps
 
@@ -152,3 +152,4 @@ These are not separate checks; they are how the checks above apply to a theme.
 - https://shopify.dev/docs/apps/build/online-store/app-proxies — proxy signature verification (verified on 2026-11-20)
 - https://shopify.dev/docs/apps/build/online-store/theme-app-extensions — extension rendering context (verified on 2026-11-20)
 - https://shopify.dev/docs/apps/build/authentication-authorization — session and token lifecycle (verified on 2026-11-20)
+- https://shopify.dev/docs/api/usage/versioning — 12-month minimum support, nine-month overlap, fall-forward and the `X-Shopify-API-Version` header (verified on 2026-11-25)

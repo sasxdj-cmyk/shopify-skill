@@ -168,10 +168,10 @@ Each row in `references/security-checklist.md` gives severity, what to look for,
 
 AI answers about Shopify fail on specifics, not on structure. This repository treats every specific as a claim to verify:
 
-- **Every factual statement carries a source URL and the date it was checked.** 61 cited URLs, all reachable, checked by `scripts/check-links.mjs` and by CI.
-- **The facts are pinned in the test suite.** Checkout targets, Theme Check names, schema keys, setting types, Web Pixel events and the 36 security severities are compared against the published values; inventing one fails the build.
+- **Every factual statement carries a source URL and the date it was checked.** 79 cited URLs, all reachable, checked by `scripts/check-links.mjs` and by CI.
+- **The facts are pinned in the test suite.** Checkout targets, Function run targets, Theme Check names and severities, schema keys, setting types, form types, localization input names, Web Pixel events and the 36 security severities are compared against the published values; inventing one fails the build.
 - **Legacy names are quarantined.** `checkout.liquid`, the Ruby-gem Theme Check names and the old `--category` flag are documented as wrong so an agent does not fall back to them.
-- **The release notes record the corrections.** Version 0.1.1 lists six factual defects found during review of 0.1.0, including three extension targets that do not exist. A skill that never corrects itself is not verified, it is untested.
+- **The release notes record the corrections.** 0.1.1 lists six factual defects found in 0.1.0; 0.1.2 found eight more in the CLI, form and filter documentation; 0.1.3 fixed a third round, including the merged discount APIs, the localization form contract and the section wrapper id. A skill that never corrects itself is not verified, it is untested.
 
 ## Validation
 
@@ -181,15 +181,21 @@ The repository ships an executable test suite for the skill itself:
 node scripts/validate.mjs
 ```
 
-It runs **52 checks**: the spec (`name` equals directory, kebab-case, description starts with "Use when", body under 500 lines), the reference inventory, all 36 security checks with their official severity, every markdown link, every manifest (JSON and YAML), the bilingual README and the CI wiring.
+It runs **56 checks**: the spec (`name` equals directory, kebab-case, description starts with "Use when", body under 500 lines), the reference inventory, all 36 security checks with their official severity, every markdown link, every manifest (JSON and YAML), the bilingual README and the CI wiring.
 
-It also pins the facts, so an edit cannot quietly invent one: the 31 checkout extension targets, the 78 current Theme Check checks with their severities (the 9 legacy Ruby-gem names may appear only where the text frames them as legacy), the section schema keys, the 34 setting types, the 15 form types, the 15 Web Pixel events and all 36 security severities must match the values published by Shopify. CI runs it on every push.
+It also pins the facts, so an edit cannot quietly invent one: the 31 checkout extension targets, the 8 current Function run targets, the 78 current Theme Check checks with their severities (the 9 legacy Ruby-gem names may appear only where the text frames them as legacy), the section schema keys, the 34 setting types, the 15 form types, the localization input names, the 15 Web Pixel events and all 36 security severities must match the values published by Shopify. CI runs it on every push.
+
+```bash
+node scripts/coverage.mjs
+```
+
+Coverage, not a behavioural score: it expresses each line of `assets/rubric.md` as probes over the skill's own text, so removing a fact fails CI even when every file still parses. It reports **47/47 rubric checks covered** and says plainly that this proves the material exists, not that an agent used it well. It exists because delegated behavioural runs were unavailable: recording a fake score was not an option, so the checkable half of the rubric became executable.
 
 ```bash
 node scripts/check-links.mjs
 ```
 
-Verifies that every URL cited in the documentation resolves. 67/67 at the time of writing.
+Verifies that every URL cited in the documentation resolves. 79/79 at the time of writing.
 
 The TDD evidence — executable RED/GREEN runs and the behavioural baseline — is recorded in `docs/tdd-round-1.md`, including what remains unverified.
 
@@ -262,10 +268,11 @@ Architettura del tema, Liquid, carrello AJAX, Markets e traduzioni, checkout ext
 
 Le risposte AI su Shopify sbagliano sulle specifiche, non sulla struttura. Qui ogni specifica è una tesi da verificare:
 
-- **Ogni affermazione tecnica ha la sua fonte e la data di verifica.** 61 URL citati, tutti raggiungibili, controllati da `scripts/check-links.mjs` e dalla CI.
-- **I fatti sono fissati nei test.** Target delle checkout extension, i 78 check di Theme Check con la loro severità, chiavi dello schema, tipi di setting, tipi di form, eventi Web Pixel e le 36 severità di sicurezza vengono confrontati con i valori pubblicati da Shopify: inventarne uno fa fallire la build (52 controlli eseguiti da `node scripts/validate.mjs`).
+- **Ogni affermazione tecnica ha la sua fonte e la data di verifica.** 79 URL citati, tutti raggiungibili, controllati da `scripts/check-links.mjs` e dalla CI.
+- **I fatti sono fissati nei test.** Target delle checkout extension, run target delle Function, i 78 check di Theme Check con la loro severità, chiavi dello schema, tipi di setting, tipi di form, nomi degli input di localizzazione, eventi Web Pixel e le 36 severità di sicurezza vengono confrontati con i valori pubblicati da Shopify: inventarne uno fa fallire la build (56 controlli eseguiti da `node scripts/validate.mjs`).
+- **Anche la rubrica è eseguibile.** `node scripts/coverage.mjs` esprime ogni riga di `assets/rubric.md` come asserzioni sul contenuto della skill: 47/47 righe coperte. È copertura, non un punteggio comportamentale, e lo dichiara: dimostra che il materiale per rispondere esiste, non che un agente lo abbia usato bene. Serve perché le run comportamentali delegate non erano disponibili: inventare un punteggio non era un'opzione, quindi la metà verificabile della rubrica è diventata un test.
 - **I nomi superati sono messi in quarantena.** `checkout.liquid`, i nomi dei check del vecchio gem Ruby e il flag `--category` sono documentati come sbagliati, così un agente non ci ricasca.
-- **Le note di rilascio registrano le correzioni.** La 0.1.1 elenca sei difetti fattuali trovati nella 0.1.0, compresi tre target di estensione che non esistono. Una skill che non si corregge mai non è verificata: è solo non testata.
+- **Le note di rilascio registrano le correzioni.** La 0.1.1 elenca sei difetti trovati nella 0.1.0; la 0.1.2 altri otto nella documentazione di CLI, form e filtri; la 0.1.3 un terzo giro, comprese le API discount unificate, il contratto del form di localizzazione e l'id del wrapper di sezione. Una skill che non si corregge mai non è verificata: è solo non testata.
 
 ### Licenza
 
